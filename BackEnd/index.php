@@ -27,6 +27,22 @@ switch ($request) {
         $controller->create(); // POST create user
         break;
 
+    case '/users/login':
+        $controller = new Controllers\UserController();
+        $controller->login(); // POST login user
+        break;
+
+    case (preg_match('/^\/users\/\d+$/', $request) ? true : false):
+        if ($_SERVER['REQUEST_METHOD'] == 'GET') {
+            $user_id = explode('/', $request)[2];  // Lấy user_id từ URL
+            $controller = new Controllers\UserController();
+            $controller->show($user_id); // GET thông tin user theo ID
+        } else {
+            http_response_code(405); // Method Not Allowed
+            echo json_encode(["message" => "Method Not Allowed"]);
+        }
+        break;
+
     default:
         http_response_code(404);
         echo json_encode(["message" => "Not Found"]);
