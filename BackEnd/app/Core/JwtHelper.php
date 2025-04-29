@@ -42,10 +42,17 @@ class JwtHelper
         try {
             // Giải mã token và trả về payload
             $decoded = JWT::decode($token, new Key(self::$config['secret'], 'HS256'));
-            return (array) $decoded; // Chuyển đổi đối tượng thành mảng nếu cần
+            $payload = (array) $decoded; // Chuyển đổi đối tượng thành mảng
+
+            // Kiểm tra cấu trúc payload
+            if (!isset($payload['username']) || !isset($payload['user_id'])) {
+                throw new \Exception('Invalid token payload');
+            }
+
+            return $payload;
         } catch (\Exception $e) {
             // Lỗi khi giải mã token
-            return ['error' => 'Invalid token: ' . $e->getMessage()];
+            return null; // Trả về null nếu token không hợp lệ
         }
     }
 }

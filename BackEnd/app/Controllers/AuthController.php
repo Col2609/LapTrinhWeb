@@ -7,6 +7,7 @@ use Models\User;
 use Models\ResetToken;
 use Core\JwtHelper;
 use Core\EmailHelper;
+use Helpers\PasswordHelper;
 
 class AuthController extends Controller
 {
@@ -27,6 +28,14 @@ class AuthController extends Controller
 
         if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
             return $this->response(['message' => 'Invalid email format'], 400);
+        }
+
+        // Kiểm tra mật khẩu
+        if (!PasswordHelper::validatePassword($data['password'])) {
+            return $this->response([
+                'message' => 'Mật khẩu không đáp ứng yêu cầu',
+                'requirements' => PasswordHelper::getPasswordRequirements()
+            ], 400);
         }
 
         $userModel = new User();

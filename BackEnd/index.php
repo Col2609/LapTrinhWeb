@@ -2,6 +2,8 @@
 // Cấu hình CORS
 require_once __DIR__ . '/cors.php';
 
+require_once __DIR__ . '/config/upload_paths.php';
+
 // Tự động load class
 spl_autoload_register(function ($class) {
     $path = __DIR__ . '/app/' . str_replace('\\', '/', $class) . '.php';
@@ -13,6 +15,12 @@ spl_autoload_register(function ($class) {
 
 // Load autoloader của Composer
 require_once __DIR__ . '/vendor/autoload.php';
+
+// Tạo admin mặc định nếu chưa có
+require_once __DIR__ . '/config/create_admin.php';
+
+// Tạo các thư mục upload khi khởi động server
+createUploadDirectories();
 
 // Lấy URL
 $request = $_SERVER['REQUEST_URI'];
@@ -61,6 +69,95 @@ switch ($request) {
             $controller->show($user_id); // GET thông tin user theo ID
         } else {
             http_response_code(405); // Method Not Allowed
+            echo json_encode(["message" => "Method Not Allowed"]);
+        }
+        break;
+
+    case '/auth/check-admin':
+        $db = require __DIR__ . '/config/database.php';
+        $stmt = $db->prepare('SELECT * FROM users WHERE is_admin = 1 LIMIT 1');
+        $stmt->execute();
+        $admin = $stmt->fetch(\PDO::FETCH_ASSOC);
+        echo json_encode(['exists' => $admin ? true : false]);
+        break;
+
+    // API User Management
+    case '/users':
+        $controller = new Controllers\UserController();
+        switch ($_SERVER['REQUEST_METHOD']) {
+            case 'GET':
+                $controller->getUserInfo(); // GET thông tin user
+                break;
+            case 'POST':
+                $controller->updateUserInfo(); // POST cập nhật thông tin user
+                break;
+            case 'DELETE':
+                $controller->deleteUser(); // DELETE xóa user
+                break;
+            default:
+                http_response_code(405);
+                echo json_encode(["message" => "Method Not Allowed"]);
+                break;
+        }
+        break;
+
+    case '/users/search':
+        if ($_SERVER['REQUEST_METHOD'] == 'GET') {
+            $controller = new Controllers\UserController();
+            $controller->searchUsers(); // GET tìm kiếm user
+        } else {
+            http_response_code(405);
+            echo json_encode(["message" => "Method Not Allowed"]);
+        }
+        break;
+
+    case '/users/report':
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $controller = new Controllers\UserController();
+            $controller->reportUser(); // POST báo cáo user
+        } else {
+            http_response_code(405);
+            echo json_encode(["message" => "Method Not Allowed"]);
+        }
+        break;
+
+    case '/users/reports':
+        if ($_SERVER['REQUEST_METHOD'] == 'GET') {
+            $controller = new Controllers\UserController();
+            $controller->getUserReports(); // GET danh sách báo cáo
+        } else {
+            http_response_code(405);
+            echo json_encode(["message" => "Method Not Allowed"]);
+        }
+        break;
+
+    case '/users/ban-status':
+        if ($_SERVER['REQUEST_METHOD'] == 'GET') {
+            $controller = new Controllers\UserController();
+            $controller->checkBanStatus(); // GET kiểm tra trạng thái ban
+        } else {
+            http_response_code(405);
+            echo json_encode(["message" => "Method Not Allowed"]);
+        }
+        break;
+
+    case (preg_match('/^\/users\/report\/\d+$/', $request) ? true : false):
+        if ($_SERVER['REQUEST_METHOD'] == 'DELETE') {
+            $report_id = explode('/', $request)[3];  // Lấy report_id từ URL
+            $controller = new Controllers\UserController();
+            $controller->deleteReport($report_id); // DELETE xóa báo cáo
+        } else {
+            http_response_code(405);
+            echo json_encode(["message" => "Method Not Allowed"]);
+        }
+        break;
+
+    case '/users/password/change':
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $controller = new Controllers\UserController();
+            $controller->changePassword(); // POST đổi mật khẩu
+        } else {
+            http_response_code(405);
             echo json_encode(["message" => "Method Not Allowed"]);
         }
         break;

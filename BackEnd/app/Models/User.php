@@ -70,4 +70,79 @@ class User extends Model
         $stmt = $this->db->prepare('UPDATE users SET password_hash = ? WHERE user_id = ?');
         return $stmt->execute([$password_hash, $userId]);
     }
+
+    public function update($userId, $data)
+    {
+        $allowedFields = ['nickname', 'email', 'avatar'];
+        $updates = [];
+        $values = [];
+
+        foreach ($data as $field => $value) {
+            if (in_array($field, $allowedFields)) {
+                $updates[] = "{$field} = ?";
+                $values[] = $value;
+            }
+        }
+
+        if (empty($updates)) {
+            return false;
+        }
+
+        $values[] = $userId;
+        $sql = "UPDATE users SET " . implode(', ', $updates) . " WHERE user_id = ?";
+
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute($values);
+    }
+
+    public function verifyPassword($userId, $password)
+    {
+        $stmt = $this->db->prepare('SELECT password_hash FROM users WHERE user_id = ?');
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        if ($user && password_verify($password, $user['password_hash'])) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function delete($userId)
+    {
+        $stmt = $this->db->prepare("DELETE FROM users WHERE user_id = :user_id");
+        $stmt->bindParam(':user_id', $userId, \PDO::PARAM_INT);
+
+        return $stmt->execute();
+    }
+
+    public function searchByNickname($query, $excludeUsername)
+    {
+        $stmt = $this->db->prepare("
+        SELECT * FROM users 
+        WHERE nickname LIKE :query 
+        AND is_admin = 0 
+        AND username != :excludeUsername
+    ");
+        $stmt->execute([
+            ':query' => '%' . $query . '%',
+            ':excludeUsername' => $excludeUsername,
+        ]);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    public function searchByUsername($query, $excludeUsername)
+    {
+        $stmt = $this->db->prepare("
+        SELECT * FROM users 
+        WHERE username LIKE :query 
+        AND is_admin = 0 
+        AND username != :excludeUsername
+    ");
+        $stmt->execute([
+            ':query' => '%' . $query . '%',
+            ':excludeUsername' => $excludeUsername,
+        ]);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
 }
