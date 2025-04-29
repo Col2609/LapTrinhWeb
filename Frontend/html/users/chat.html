@@ -14,16 +14,12 @@
     <script type="module" src="../../js/auth/auth-check.js"></script>
     <script type="module" src="../../js/users/chat.js"></script>
     <script type="module" src="../../js/context-menu.js"></script>
+    <script type="module" src="../../js/users/report.js"></script>
   </head>
   <body>
     <div class="container">
       <div id="toast"></div>
       <div class="sidebar-toggle-container">
-        <!-- Nút Cài đặt -->
-        <button onclick="openSettings()" title="Cài đặt">
-          <i class="fas fa-cog"></i>
-        </button>
-
         <!-- Nút Thông báo -->
         <button onclick="toggleNotiList()" title="Thông báo">
           <i class="fas fa-bell"></i>
@@ -42,6 +38,11 @@
         <!-- Nút Yêu cầu kết bạn -->
         <button onclick="toggleFriendRequestsList()" title="Yêu cầu kết bạn">
           <i class="fas fa-user-clock"></i>
+        </button>
+
+        <!-- Nút Xem báo cáo -->
+        <button onclick="toggleReportsList()" title="Báo cáo của tôi">
+          <i class="fas fa-flag"></i>
         </button>
       </div>
       <aside id="conversation-list" class="conversation-list">
@@ -128,6 +129,25 @@
         </div>
       </aside>
 
+      <!-- Danh sách báo cáo -->
+      <aside id="reports-list" class="reports-list" style="display: none">
+        <h3>Báo cáo của tôi</h3>
+
+        <div class="report-filters">
+          <label for="report-status">Chọn trạng thái báo cáo:</label>
+          <select id="report-status" class="report-filter">
+            <option value="all" selected>Tất cả</option>
+            <option value="pending">Đang chờ</option>
+            <option value="in_progress">Đang xử lý</option>
+            <option value="resolved">Đã xử lý</option>
+          </select>
+        </div>
+
+        <ul id="report-items" class="report-items">
+          <!-- Danh sách báo cáo sẽ được render ở đây -->
+        </ul>
+      </aside>
+
       <main class="chat-window">
         <div id="chat-header" class="chat-header">
           <span id="conversation-name">Cuộc trò chuyện</span>
@@ -182,6 +202,11 @@
         </div>
 
         <div class="conversation-actions">
+          <button id="report-conversation-btn" class="report-btn">
+            <i class="fas fa-flag"></i>
+            Báo cáo cuộc trò chuyện
+          </button>
+
           <button onclick="confirmDeleteConversation()" class="danger-btn">
             <i class="fa fa-trash"></i>
             Xóa cuộc trò chuyện
@@ -232,19 +257,54 @@
             </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <div id="file-context-menu" class="context-menu" style="display: none; position: absolute; z-index: 1000">
-      <ul>
-        <li id="download-file">Tải xuống</li>
-        <li id="open-file">Mở file</li>
-      </ul>
+        <!-- Thêm container cho danh sách bạn chung -->
+        <div id="mutual-friends-container" class="mutual-friends-container">
+          <!-- Nội dung sẽ được thêm động bởi JavaScript -->
+        </div>
+
+        <!-- Thêm các nút tương tác -->
+        <div class="user-actions">
+          <button id="add-friend-btn" class="action-btn add-friend-btn" style="display: none">
+            <i class="fas fa-user-plus"></i>
+            Thêm bạn
+          </button>
+          <button id="unfriend-btn" class="action-btn unfriend-btn" style="display: none">
+            <i class="fas fa-user-minus"></i>
+            Hủy kết bạn
+          </button>
+
+          <button id="report-user-btn" class="report-btn">
+            <i class="fas fa-flag"></i>
+            Báo cáo người dùng
+          </button>
+        </div>
+      </div>
     </div>
 
     <button id="scrollToBottomBtn" title="Cuộn xuống">
       <i class="fas fa-arrow-down"></i>
     </button>
+
+    <!-- Modal báo cáo -->
+    <div id="report-modal" class="user-modal">
+      <div class="user-modal-content">
+        <span class="user-modal-close" onclick="closeReportModal()">&times;</span>
+        <h3 id="report-modal-title" style="text-align: center; margin-bottom: 20px">Báo cáo</h3>
+
+        <div class="report-form">
+          <div class="form-group">
+            <label for="report-description">Lý do báo cáo:</label>
+            <textarea id="report-description" class="report-textarea" rows="4" placeholder="Nhập lý do báo cáo..."></textarea>
+          </div>
+
+          <button onclick="submitReport()" class="submit-report-btn">
+            <i class="fas fa-paper-plane"></i>
+            Gửi báo cáo
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Modal tạo cuộc trò chuyện / nhóm -->
     <div id="create-conversation-modal" class="user-modal">

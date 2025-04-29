@@ -1,6 +1,7 @@
-import { toast, createModal } from '../untils.js';
+import { toast, createModal, formatDateToMessage } from '../untils.js';
 import config from '../config.js';
 import initContextMenu from '../context-menu.js';
+import toggleReportsList from './report.js';
 // Các biến toàn cục
 let selectedFiles = [];
 let currentConversationId = null;
@@ -102,6 +103,12 @@ async function loadConversations() {
           }
 
           loadMessages(id, name, true);
+
+          // Kiểm tra xem sidebar có đang mở không
+          const sidebar = document.getElementById('conversation-info-sidebar');
+          if (sidebar.style.display === 'flex') {
+            loadConversationInfo(); // Gọi hàm để cập nhật thông tin
+          }
         };
 
         const avatar = document.createElement('img');
@@ -256,6 +263,8 @@ async function loadMessages(conversationId, conversationName, isInitial = true) 
   const chatContent = document.getElementById('chat-content');
 
   if (isInitial) {
+    const chatHeader = document.getElementById('chat-header');
+    chatHeader.dataset.id = conversationId;
     document.getElementById('conversation-name').textContent = conversationName;
     chatContent.innerHTML = '';
     messageOffset = 0;
@@ -297,16 +306,13 @@ async function loadMessages(conversationId, conversationName, isInitial = true) 
       }, 0);
     }
 
-    // if (isInitial) {
-    //   fetch(`${config.baseURL}/conversations/conversations/${conversationId}/mark-read`, {
-    //     method: 'PUT',
-    //     headers: {
-    //       Authorization: `Bearer ${token}`,
-    //     },
-    //   }).catch((e) => console.error('Đánh dấu đã đọc conversation thất bại:', e));
-    // }
-
     messageOffset += messages.length;
+
+    // Cập nhật thông tin cuộc trò chuyện nếu sidebar đang mở
+    const sidebar = document.getElementById('conversation-info-sidebar');
+    if (sidebar.style.display === 'flex') {
+      loadConversationInfo(); // Gọi hàm để cập nhật thông tin
+    }
   } catch (error) {
     console.error('Lỗi khi fetch tin nhắn:', error);
   } finally {
@@ -446,12 +452,8 @@ function appendMessageToUI(msg) {
   const time = document.createElement('span');
   time.className = 'timestamp';
   const date = new Date(msg.timestamp);
-  const vnTime = new Date(date.getTime() + 7 * 60 * 60 * 1000); // Cộng thêm 7 tiếng
-  const hours = vnTime.getHours().toString().padStart(2, '0');
-  const minutes = vnTime.getMinutes().toString().padStart(2, '0');
-  const day = vnTime.getDate().toString().padStart(2, '0');
-  const month = (vnTime.getMonth() + 1).toString().padStart(2, '0');
-  time.textContent = `${hours}:${minutes} ${day}/${month}`;
+  date.setHours(date.getHours() + 7); // Chuyển sang múi giờ Việt Nam
+  time.innerHTML = formatDateToMessage(date);
   messageDiv.appendChild(time);
 
   chatContent.appendChild(messageDiv);
@@ -503,12 +505,8 @@ function appendMessageToTop(msg, currentUser) {
   const time = document.createElement('span');
   time.className = 'timestamp';
   const date = new Date(msg.timestamp);
-  const vnTime = new Date(date.getTime() + 7 * 60 * 60 * 1000);
-  const hours = vnTime.getHours().toString().padStart(2, '0');
-  const minutes = vnTime.getMinutes().toString().padStart(2, '0');
-  const day = vnTime.getDate().toString().padStart(2, '0');
-  const month = (vnTime.getMonth() + 1).toString().padStart(2, '0');
-  time.textContent = `${hours}:${minutes} ${day}/${month}`;
+  date.setHours(date.getHours() + 7); // Chuyển sang múi giờ Việt Nam
+  time.innerHTML = formatDateToMessage(date);
   messageDiv.appendChild(time);
 
   chatContent.insertBefore(messageDiv, chatContent.firstChild);
@@ -610,6 +608,7 @@ function sendImage(event) {
     const shouldReload = confirm('Bạn vừa gửi tệp đính kèm.\nTải lại trang để cập nhật?');
     if (shouldReload) {
       localStorage.setItem('lastConversationId', currentConversationId);
+      window.location.reload();
     } else {
       localStorage.setItem('lastConversationId', currentConversationId);
     }
@@ -626,6 +625,7 @@ function sendFile(event) {
     const shouldReload = confirm('Bạn vừa gửi tệp đính kèm.\nTải lại trang để cập nhật?');
     if (shouldReload) {
       localStorage.setItem('lastConversationId', currentConversationId);
+      window.location.reload();
     } else {
       localStorage.setItem('lastConversationId', currentConversationId);
     }
@@ -652,22 +652,72 @@ function connectWebSocket() {
   socket.onmessage = async (event) => {
     try {
       const data = JSON.parse(event.data);
-      console.log('Tin nhắn từ WebSocket:', data);
-      if (data.type === 'url_update') {
+      console.log('Dữ liệu nhận được từ WebSocket:', data);
+
+      if (data.type_socket === 'url_update') {
         const updateEvent = new CustomEvent('url-update', {
           detail: data.data,
         });
         window.dispatchEvent(updateEvent);
       }
 
+      // Xử lý thông báo hệ thống
+      if (data.type_socket === 'new_notification') {
+        // Hiển thị toast thông báo
+        toast({
+          title: data.title || 'Thông báo',
+          message: data.message,
+          type: 'info',
+        });
+
+        // Thêm thông báo mới vào đầu danh sách
+        const notiItems = document.getElementById('noti-items');
+        if (notiItems) {
+          const newNoti = document.createElement('li');
+          newNoti.className = 'noti-item unread';
+          newNoti.dataset.notiId = data.id;
+
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.className = 'noti-checkbox';
+
+          const message = document.createElement('div');
+          message.className = 'noti-message';
+          message.style.cursor = 'pointer';
+          message.textContent = data.message;
+
+          // Thêm sự kiện click để xử lý thông báo
+          message.onclick = () =>
+            onClickNotification({
+              id: data.id,
+              type: data.type,
+              related_id: data.related_id,
+              related_table: data.related_table,
+            });
+
+          newNoti.appendChild(checkbox);
+          newNoti.appendChild(message);
+
+          // Thêm vào đầu danh sách
+          if (notiItems.firstChild) {
+            notiItems.insertBefore(newNoti, notiItems.firstChild);
+          } else {
+            notiItems.appendChild(newNoti);
+          }
+
+          // Cập nhật số thông báo chưa đọc
+          checkUnreadNotifications();
+        }
+      }
+
       // Xử lý tin nhắn mới
-      if (data.type === 'new_message') {
+      if (data.type_socket === 'new_message') {
         const msg = {
           ...data.message,
           sender_nickname: data.message.sender_nickname || 'Người gửi',
           sender_username: data.message.sender_username || 'unknown',
         };
-        console.log('msg', msg);
+        console.log('Tin nhắn mới:', msg);
         // Nếu tin nhắn thuộc cuộc trò chuyện hiện tại
         if (String(currentConversationId) === String(data.conversation_id)) {
           if (msg.attachments && msg.attachments.length > 0) {
@@ -676,11 +726,13 @@ function connectWebSocket() {
             const shouldReload = confirm('Bạn vừa nhận được tệp đính kèm.\nTải lại trang để cập nhật?');
             if (shouldReload) {
               localStorage.setItem('lastConversationId', currentConversationId);
+              window.location.reload();
             } else {
               localStorage.setItem('lastConversationId', currentConversationId);
             }
           } else {
             appendMessageToUI(msg);
+            loadConversationsForWebSocket();
           }
         } else {
           loadConversationsForWebSocket();
@@ -701,10 +753,10 @@ function connectWebSocket() {
   };
 }
 
-// window.addEventListener("beforeunload", (e) => {
+// window.addEventListener('beforeunload', (e) => {
 //   if (!isReloadConfirmed) {
 //     e.preventDefault();
-//     e.returnValue = "";
+//     e.returnValue = '';
 //   }
 // });
 
@@ -745,24 +797,106 @@ function setupMarkMessagesReadOnClick() {
         // Xóa thẻ 'unread-label' trong UI sau khi đánh dấu là đã đọc
         unreadMessage.remove();
       }
+
+      // Đánh dấu cuộc trò chuyện là đã đọc
+      await fetch(`${config.baseURL}/conversations/conversations/${currentConversationId}/mark-read`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // Xóa dấu chấm chưa đọc khỏi cuộc trò chuyện trong danh sách
+      const chatItem = document.querySelector(`.chat-item[data-id="${currentConversationId}"]`);
+      if (chatItem) {
+        const unreadDot = chatItem.querySelector('.unread-dot');
+        if (unreadDot) unreadDot.remove();
+      }
     } catch (err) {
       console.warn('❌ Lỗi khi đánh dấu tin nhắn đã đọc:', err);
     }
   });
 }
 
+// Thêm hàm kiểm tra trạng thái unread cho các toggle
+async function checkUnreadStatus() {
+  const token = localStorage.getItem('access_token');
+  if (!token) return;
+
+  try {
+    // Kiểm tra thông báo chưa đọc
+    const notiRes = await fetch(`${config.baseURL}/notifications/?unread_only=true`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const unreadNotis = await notiRes.json();
+    const bellBtn = document.querySelector('.sidebar-toggle-container button[title="Thông báo"] i');
+    if (bellBtn) {
+      if (unreadNotis.length > 0) {
+        bellBtn.classList.add('has-unread');
+      } else {
+        bellBtn.classList.remove('has-unread');
+      }
+    }
+
+    // Kiểm tra yêu cầu kết bạn chưa đọc
+    const friendReqRes = await fetch(`${config.baseURL}/friend-requests/received`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const friendReqs = await friendReqRes.json();
+    const friendReqBtn = document.querySelector('.sidebar-toggle-container button[title="Yêu cầu kết bạn"] i');
+    if (friendReqBtn) {
+      if (friendReqs.length > 0) {
+        friendReqBtn.classList.add('has-unread');
+      } else {
+        friendReqBtn.classList.remove('has-unread');
+      }
+    }
+
+    // Kiểm tra báo cáo chưa xử lý
+    const reportRes = await fetch(`${config.baseURL}/reports/?status=pending`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const pendingReports = await reportRes.json();
+    const reportBtn = document.querySelector('.sidebar-toggle-container button[title="Báo cáo"] i');
+    if (reportBtn) {
+      if (pendingReports.length > 0) {
+        reportBtn.classList.add('has-unread');
+      } else {
+        reportBtn.classList.remove('has-unread');
+      }
+    }
+  } catch (error) {
+    console.error('Lỗi khi kiểm tra trạng thái unread:', error);
+  }
+}
+
 // Sửa lại phần khởi tạo khi trang load
 document.addEventListener('DOMContentLoaded', () => {
+  // Thêm event listener cho input chat
+  const chatInput = document.querySelector('.chat-input');
+  if (chatInput) {
+    chatInput.addEventListener('keydown', function (e) {
+      // Kiểm tra nếu nhấn Enter và không nhấn Shift (để cho phép xuống dòng bằng Shift+Enter)
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault(); // Ngăn không cho xuống dòng mặc định
+        sendMessage(); // Gọi hàm gửi tin nhắn
+      }
+    });
+  }
+
   // Kiểm tra xem có conversationId được lưu từ lần reload trước không
   const lastConversationId = localStorage.getItem('lastConversationId');
   if (lastConversationId) {
     currentConversationId = lastConversationId;
-    localStorage.removeItem('lastConversationId'); // Xóa sau khi đã lấy
+    localStorage.removeItem('lastConversationId');
   }
 
   loadConversations();
   connectWebSocket();
   setupMarkMessagesReadOnClick();
+
+  // Kiểm tra trạng thái unread cho tất cả các toggle
+  checkUnreadStatus();
 });
 
 // Thêm hàm đóng modal thông tin người dùng
@@ -790,6 +924,10 @@ async function showUserInfo(username) {
             : `${config.baseURL}/${userData.avatar.replace(/^\/+/, '')}`
           : '../../assets/image/private-chat-default.jpg';
 
+        const modal = document.getElementById('user-info-modal');
+        modal.dataset.username = userData.username;
+        modal.dataset.userId = userData.user_id;
+
         const avatarImg = document.getElementById('user-avatar');
         avatarImg.src = avatarUrl;
         avatarImg.onerror = () => {
@@ -800,12 +938,79 @@ async function showUserInfo(username) {
         document.getElementById('user-nickname').textContent = userData.nickname || 'string';
         document.getElementById('user-email').textContent = userData.email || 'user@example.com';
 
+        // Lấy danh sách bạn chung
+        const mutualFriends = await getMutualFriends(username);
+        const mutualCount = mutualFriends.length;
+
+        // Hiển thị thông tin bạn chung
+        const mutualFriendsContainer = document.getElementById('mutual-friends-container');
+        mutualFriendsContainer.innerHTML = '';
+
+        if (mutualCount > 0) {
+          const mutualTitle = document.createElement('h3');
+          mutualTitle.textContent = `${mutualCount} bạn chung`;
+          mutualFriendsContainer.appendChild(mutualTitle);
+
+          const mutualList = document.createElement('div');
+          mutualList.className = 'mutual-friends-list';
+
+          mutualFriends.forEach((friend) => {
+            const friendItem = document.createElement('div');
+            friendItem.className = 'mutual-friend-item';
+
+            const friendAvatar = document.createElement('img');
+            friendAvatar.src = friend.avatar
+              ? `${config.baseURL}/${friend.avatar.replace(/^\/+/, '')}`
+              : '../../assets/image/private-chat-default.jpg';
+            friendAvatar.alt = 'avatar';
+            friendAvatar.className = 'mutual-friend-avatar';
+            friendAvatar.onerror = () => {
+              friendAvatar.src = '../../assets/image/private-chat-default.jpg';
+            };
+
+            const friendName = document.createElement('span');
+            friendName.className = 'mutual-friend-name';
+            friendName.textContent = friend.nickname || friend.username;
+
+            friendItem.appendChild(friendAvatar);
+            friendItem.appendChild(friendName);
+            mutualList.appendChild(friendItem);
+          });
+
+          mutualFriendsContainer.appendChild(mutualList);
+        } else {
+          mutualFriendsContainer.innerHTML = '<p class="no-mutual-friends">Không có bạn chung</p>';
+        }
+
+        // Thêm nút thêm bạn nếu chưa kết bạn
+        const addFriendBtn = document.getElementById('add-friend-btn');
+        if (userData.status === 'Chưa kết bạn') {
+          addFriendBtn.style.display = 'block';
+          addFriendBtn.onclick = () => addFriend(username);
+        } else {
+          addFriendBtn.style.display = 'none';
+        }
+
+        // Thêm nút hủy kết bạn nếu đã là bạn
+        const unfriendBtn = document.getElementById('unfriend-btn');
+        if (userData.status === 'Bạn bè') {
+          unfriendBtn.style.display = 'block';
+          unfriendBtn.onclick = () => unfriend(username);
+        } else {
+          unfriendBtn.style.display = 'none';
+        }
+
         // Sử dụng flex để căn giữa modal
-        document.getElementById('user-info-modal').style.display = 'flex';
+        modal.style.display = 'flex';
       }
     }
   } catch (error) {
     console.error('Lỗi khi lấy thông tin người dùng:', error);
+    toast({
+      title: 'Lỗi',
+      message: 'Không thể tải thông tin người dùng',
+      type: 'error',
+    });
   }
 }
 
@@ -853,13 +1058,14 @@ function toggleChatList() {
   const notiList = document.getElementById('noti-list');
   const friendList = document.getElementById('friend-list');
   const requestList = document.getElementById('friend-request-list');
+  const reportList = document.getElementById('reports-list');
   if (!chatList) return;
 
   const currentDisplay = window.getComputedStyle(chatList).display;
 
   if (currentDisplay === 'none') {
     // Ẩn 3 panel còn lại
-    [notiList, friendList, requestList].forEach((el) => {
+    [notiList, friendList, requestList, reportList].forEach((el) => {
       el.classList.add('hiding');
       setTimeout(() => (el.style.display = 'none'), 300);
     });
@@ -881,13 +1087,15 @@ async function toggleNotiList() {
   const friendList = document.getElementById('friend-list');
   const chatList = document.getElementById('conversation-list');
   const requestList = document.getElementById('friend-request-list');
+  const reportList = document.getElementById('reports-list');
+
   if (!notiList) return;
 
   const currentDisplay = window.getComputedStyle(notiList).display;
 
   if (currentDisplay === 'none') {
     // Ẩn 3 panel còn lại
-    [chatList, friendList, requestList].forEach((el) => {
+    [chatList, friendList, requestList, reportList].forEach((el) => {
       el.classList.add('hiding');
       setTimeout(() => (el.style.display = 'none'), 300);
     });
@@ -896,6 +1104,12 @@ async function toggleNotiList() {
     notiList.style.display = 'flex';
     void notiList.offsetHeight;
     notiList.classList.remove('hiding');
+
+    // Xóa class has-unread khi mở danh sách thông báo
+    const bellBtn = document.querySelector('.sidebar-toggle-container button[title="Thông báo"] i');
+    if (bellBtn) {
+      bellBtn.classList.remove('has-unread');
+    }
   } else {
     notiList.classList.add('hiding');
     setTimeout(() => {
@@ -909,13 +1123,15 @@ function toggleFriendsList() {
   const notiList = document.getElementById('noti-list');
   const chatList = document.getElementById('conversation-list');
   const requestList = document.getElementById('friend-request-list');
+  const reportList = document.getElementById('reports-list');
+
   if (!friendList) return;
 
   const currentDisplay = window.getComputedStyle(friendList).display;
 
   if (currentDisplay === 'none') {
     // Ẩn các panel còn lại
-    [notiList, chatList, requestList].forEach((el) => {
+    [notiList, chatList, requestList, reportList].forEach((el) => {
       el.classList.add('hiding');
       setTimeout(() => (el.style.display = 'none'), 300);
     });
@@ -941,6 +1157,7 @@ async function toggleFriendRequestsList() {
   const friendList = document.getElementById('friend-list');
   const notiList = document.getElementById('noti-list');
   const chatList = document.getElementById('conversation-list');
+  const reportList = document.getElementById('reports-list');
 
   if (!requestList) return;
 
@@ -951,10 +1168,12 @@ async function toggleFriendRequestsList() {
     chatList.classList.add('hiding');
     friendList.classList.add('hiding');
     notiList.classList.add('hiding');
+    reportList.classList.add('hiding');
     setTimeout(() => {
       chatList.style.display = 'none';
       friendList.style.display = 'none';
       notiList.style.display = 'none';
+      reportList.style.display = 'none';
     }, 300);
 
     // Hiện request list
@@ -963,6 +1182,12 @@ async function toggleFriendRequestsList() {
     requestList.classList.remove('hiding');
 
     await loadFriendRequests();
+
+    // Xóa class has-unread khi mở danh sách yêu cầu kết bạn
+    const friendReqBtn = document.querySelector('.sidebar-toggle-container button[title="Yêu cầu kết bạn"] i');
+    if (friendReqBtn) {
+      friendReqBtn.classList.remove('has-unread');
+    }
   } else {
     requestList.classList.add('hiding');
     setTimeout(() => {
@@ -989,6 +1214,15 @@ function openCreateModal(type) {
   document.getElementById('conversation-group-name').value = '';
 
   document.getElementById('create-conversation-modal').style.display = 'flex';
+
+  document.getElementById('create-conversation-modal').addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault(); // Ngăn chặn hành vi mặc định của Enter
+      submitCreateConversation(); // Gọi hàm gửi
+    } else if (event.key === 'Escape') {
+      closeCreateModal(); // Gọi hàm hủy
+    }
+  });
 }
 
 function closeCreateModal() {
@@ -1033,7 +1267,11 @@ async function submitCreateConversation() {
       members.forEach((username) => query.append('username', username));
     }
 
-    if (groupName) query.append('name', groupName);
+    if (groupName) {
+      query.append('name', groupName);
+    }
+  } else if (currentConversationType === 'private') {
+    query.append('username', usernamesInput);
   }
 
   try {
@@ -1049,7 +1287,7 @@ async function submitCreateConversation() {
 
     if (!response.ok) {
       toast({
-        title: `Lỗi`,
+        title: 'Lỗi',
         message: result.detail || 'Có lỗi xảy ra.',
         type: 'error',
       });
@@ -1062,7 +1300,45 @@ async function submitCreateConversation() {
       message: currentConversationType === 'group' ? 'Đã tạo nhóm!' : 'Đã tạo cuộc trò chuyện!',
       type: 'success',
     });
-    loadConversations();
+
+    // Tải cuộc trò chuyện mới
+    currentConversationId = result.id; // Lưu ID cuộc trò chuyện mới
+
+    // Thêm cuộc trò chuyện mới vào đầu danh sách
+    const chatList = document.querySelector('.chat-list');
+    const li = document.createElement('li');
+    li.className = 'chat-item';
+    li.dataset.id = currentConversationId;
+    li.dataset.conversationId = currentConversationId;
+
+    // Thiết lập tên cuộc trò chuyện
+    const conversationName = currentConversationType === 'private' ? `test & ${usernamesInput}` : groupName;
+    li.dataset.conversationName = conversationName;
+
+    // Thêm dấu chấm nếu cuộc trò chuyện chưa đọc
+    const unreadDot = createUnreadIndicator();
+    li.appendChild(unreadDot);
+
+    li.onclick = async () => {
+      currentConversationId = currentConversationId; // Cập nhật ID cuộc trò chuyện
+      loadMessages(currentConversationId, conversationName, true);
+    };
+
+    const avatar = document.createElement('img');
+    avatar.className = 'avatar';
+    avatar.src = currentConversationType === 'group' ? '../../assets/image/group-chat-default.jpg' : '../../assets/image/private-chat-default.jpg';
+    avatar.alt = 'avatar';
+
+    const nameContainer = document.createElement('span');
+    nameContainer.className = 'chat-name';
+    const nameText = document.createTextNode(' ' + conversationName);
+    nameContainer.appendChild(nameText);
+
+    li.appendChild(avatar);
+    li.appendChild(nameContainer);
+    chatList.insertBefore(li, chatList.firstChild); // Thêm vào đầu danh sách
+
+    loadMessages(currentConversationId, conversationName, true);
   } catch (error) {
     console.error('Lỗi khi fetch:', error);
     toast({
@@ -1085,7 +1361,86 @@ searchToggle.addEventListener('change', () => {
   friendSearchInput.dispatchEvent(new Event('input')); // Gọi lại tìm kiếm
 });
 
+// Hàm lấy danh sách bạn chung
+async function getMutualFriends(username) {
+  const token = localStorage.getItem('access_token');
+  if (!token) return [];
+
+  try {
+    const response = await fetch(`${config.baseURL}/friends/mutual?username=${username}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Không thể lấy danh sách bạn chung');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Lỗi khi lấy danh sách bạn chung:', error);
+    return [];
+  }
+}
+
+// Hàm hủy kết bạn
+async function unfriend(username) {
+  const token = localStorage.getItem('access_token');
+  if (!token) {
+    toast({
+      title: 'Lỗi',
+      message: 'Bạn chưa đăng nhập',
+      type: 'error',
+    });
+    return;
+  }
+
+  try {
+    const response = await fetch(`${config.baseURL}/friends/friends/${username}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const result = await response.json();
+      toast({
+        title: 'Lỗi',
+        message: result.detail || 'Không thể hủy kết bạn',
+        type: 'error',
+      });
+      return;
+    }
+
+    toast({
+      title: 'Thành công',
+      message: 'Đã hủy kết bạn',
+      type: 'success',
+    });
+
+    // Đóng modal thông tin người dùng nếu đang mở
+    closeUserInfoModal();
+
+    // Cập nhật lại danh sách bạn bè
+    loadFriendList();
+  } catch (error) {
+    console.error('Lỗi khi hủy kết bạn:', error);
+    toast({
+      title: 'Lỗi',
+      message: 'Không thể kết nối đến máy chủ',
+      type: 'error',
+    });
+  }
+}
+
+// Cập nhật hàm hiển thị danh sách bạn bè
 friendSearchInput.addEventListener('input', async function (e) {
+  console.log('test');
   const query = e.target.value.trim();
   const token = localStorage.getItem('access_token');
   if (!token) return;
@@ -1108,9 +1463,12 @@ friendSearchInput.addEventListener('input', async function (e) {
         return;
       }
 
-      friends.forEach((user) => {
+      for (const user of friends) {
         const li = document.createElement('li');
         li.className = 'friend-item';
+
+        // Thêm sự kiện click để hiển thị modal thông tin
+        li.onclick = () => showUserInfo(user.username);
 
         const avatar = document.createElement('img');
         avatar.src = user.avatar ? `${config.baseURL}/${user.avatar.replace(/^\/+/, '')}` : '../../assets/image/private-chat-default.jpg';
@@ -1124,11 +1482,38 @@ friendSearchInput.addEventListener('input', async function (e) {
         name.className = 'friend-name';
         name.textContent = `${user.nickname || 'Không có nickname'} (@${user.username})`;
 
+        // Lấy danh sách bạn chung
+        const mutualFriends = await getMutualFriends(user.username);
+        const mutualCount = mutualFriends.length;
+
+        const actions = document.createElement('div');
+        actions.className = 'friend-actions';
+
+        // Nút hủy kết bạn
+        const unfriendBtn = document.createElement('button');
+        unfriendBtn.innerHTML = '<i class="fas fa-user-minus"></i>';
+        unfriendBtn.className = 'unfriend-btn';
+        unfriendBtn.title = 'Hủy kết bạn';
+        unfriendBtn.onclick = (e) => {
+          e.stopPropagation(); // Ngăn sự kiện click lan ra phần tử cha
+          unfriend(user.username);
+        };
+
         info.appendChild(name);
+        // Chỉ hiển thị số bạn chung nếu có
+        if (mutualCount > 0) {
+          const mutualInfo = document.createElement('div');
+          mutualInfo.className = 'mutual-friends';
+          mutualInfo.textContent = `${mutualCount} bạn chung`;
+          info.appendChild(mutualInfo);
+        }
+
         li.appendChild(avatar);
         li.appendChild(info);
+        li.appendChild(actions);
+        actions.appendChild(unfriendBtn);
         friendListContainer.appendChild(li);
-      });
+      }
     } else {
       // Tìm kiếm người dùng
       const searchByNickname = searchToggle.checked;
@@ -1145,9 +1530,12 @@ friendSearchInput.addEventListener('input', async function (e) {
         return;
       }
 
-      users.forEach((user) => {
+      for (const user of users) {
         const li = document.createElement('li');
         li.className = 'friend-item';
+
+        // Thêm sự kiện click để hiển thị modal thông tin
+        li.onclick = () => showUserInfo(user.username);
 
         const avatar = document.createElement('img');
         avatar.src = user.avatar ? `${config.baseURL}/${user.avatar.replace(/^\/+/, '')}` : '../../assets/image/private-chat-default.jpg';
@@ -1161,6 +1549,10 @@ friendSearchInput.addEventListener('input', async function (e) {
         name.className = 'friend-name';
         name.textContent = `${user.nickname || 'Không có nickname'} (@${user.username})`;
 
+        // Lấy danh sách bạn chung cho kết quả tìm kiếm
+        const mutualFriends = await getMutualFriends(user.username);
+        const mutualCount = mutualFriends.length;
+
         const status = document.createElement('div');
         status.className = 'friend-status';
         status.textContent = user.status;
@@ -1172,17 +1564,26 @@ friendSearchInput.addEventListener('input', async function (e) {
         addBtn.disabled = user.status !== 'Chưa kết bạn';
         if (addBtn.disabled) addBtn.style.opacity = '0.4';
 
-        addBtn.onclick = () => {
+        addBtn.onclick = (e) => {
+          e.stopPropagation(); // Ngăn sự kiện click lan ra phần tử cha
           if (!addBtn.disabled) addFriend(user.username);
         };
 
         info.appendChild(name);
         info.appendChild(status);
+        // Chỉ hiển thị số bạn chung nếu có
+        if (mutualCount > 0) {
+          const mutualInfo = document.createElement('div');
+          mutualInfo.className = 'mutual-friends';
+          mutualInfo.textContent = `${mutualCount} bạn chung`;
+          info.appendChild(mutualInfo);
+        }
+
         li.appendChild(avatar);
         li.appendChild(info);
         li.appendChild(addBtn);
         friendListContainer.appendChild(li);
-      });
+      }
     }
   } catch (error) {
     console.error('Lỗi khi tải danh sách bạn bè:', error);
@@ -1191,9 +1592,80 @@ friendSearchInput.addEventListener('input', async function (e) {
 });
 
 // Gọi thủ công khi mở danh sách bạn bè
-function loadFriendList() {
-  friendSearchInput.value = '';
-  friendSearchInput.dispatchEvent(new Event('input'));
+async function loadFriendList() {
+  console.log('Load friend list');
+  const friendList = document.querySelector('.friend-items');
+  friendList.innerHTML = '';
+
+  try {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      console.error('Không tìm thấy token');
+      return;
+    }
+
+    const response = await fetch('http://127.0.0.1:8000/friends/friends', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Lỗi khi tải danh sách bạn bè');
+    }
+
+    const friends = await response.json();
+
+    for (const friend of friends) {
+      const friendItem = document.createElement('li');
+      friendItem.className = 'friend-item';
+      friendItem.onclick = () => showUserInfo(friend.username);
+
+      const friendInfo = document.createElement('div');
+      friendInfo.className = 'friend-info';
+
+      const avatar = document.createElement('img');
+      avatar.src = friend.avatar || '../../assets/image/private-chat-default.jpg';
+      avatar.alt = 'avatar';
+      avatar.className = 'avatar';
+
+      const info = document.createElement('div');
+      info.className = 'info';
+
+      const name = document.createElement('div');
+      name.className = 'name';
+      name.textContent = friend.nickname || friend.username;
+
+      const mutualFriends = await getMutualFriends(friend.username);
+      const mutualCount = mutualFriends.length;
+
+      info.appendChild(name);
+      if (mutualCount > 0) {
+        const mutualInfo = document.createElement('div');
+        mutualInfo.className = 'mutual-friends';
+        mutualInfo.textContent = `${mutualCount} bạn chung`;
+        info.appendChild(mutualInfo);
+      }
+
+      friendInfo.appendChild(avatar);
+      friendInfo.appendChild(info);
+      friendItem.appendChild(friendInfo);
+
+      const unfriendBtn = document.createElement('button');
+      unfriendBtn.className = 'unfriend-btn';
+      unfriendBtn.innerHTML = '<i class="fas fa-user-minus"></i>';
+      unfriendBtn.onclick = (e) => {
+        e.stopPropagation();
+        unfriend(friend.username);
+      };
+
+      friendItem.appendChild(unfriendBtn);
+      friendList.appendChild(friendItem);
+    }
+  } catch (error) {
+    console.error('Lỗi khi tải danh sách bạn bè:', error);
+    showToast('Có lỗi xảy ra khi tải danh sách bạn bè', 'error');
+  }
 }
 
 // Hàm gọi API thêm bạn
@@ -1225,6 +1697,10 @@ async function addFriend(username) {
         message: `Đã gửi lời mời kết bạn đến @${username}`,
         type: 'success',
       });
+
+      // Đóng modal thông tin người dùng nếu đang mở
+      closeUserInfoModal();
+
       friendSearchInput.dispatchEvent(new Event('input'));
     } else {
       toast({
@@ -1241,6 +1717,44 @@ async function addFriend(username) {
       type: 'error',
     });
   }
+}
+
+async function deleteFriendRequest(requestId) {
+  const token = localStorage.getItem('access_token');
+  if (!token) {
+    toast({ title: 'Lỗi', message: 'Bạn chưa đăng nhập.', type: 'error' });
+    return;
+  }
+
+  createModal({
+    title: 'Xác nhận hủy yêu cầu',
+    message: 'Bạn có chắc chắn muốn hủy yêu cầu kết bạn này không?',
+    primaryButtonText: 'Hủy yêu cầu',
+    secondaryButtonText: 'Đóng',
+    showSecondaryButton: true,
+    onPrimary: async () => {
+      try {
+        const res = await fetch(`${config.baseURL}/friend-requests/${requestId}`, {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
+        });
+
+        if (res.ok) {
+          toast({ title: 'Thành công', message: 'Đã hủy yêu cầu kết bạn.', type: 'success' });
+          await loadFriendRequests(); // Refresh lại danh sách
+        } else {
+          const data = await res.json();
+          toast({ title: 'Lỗi', message: data.detail || 'Không thể hủy yêu cầu.', type: 'error' });
+        }
+      } catch (err) {
+        console.error('Lỗi khi hủy yêu cầu:', err);
+        toast({ title: 'Lỗi', message: 'Có lỗi xảy ra khi hủy yêu cầu.', type: 'error' });
+      }
+    },
+  });
 }
 
 // Hàm xử lí yêu cầu kết bạn
@@ -1312,12 +1826,18 @@ async function loadFriendRequests() {
         info.className = 'username';
         info.textContent = `${req.receiver_nickname || req.receiver_username} (@${req.receiver_username})`;
 
-        const status = document.createElement('div');
-        status.className = 'actions';
-        status.innerHTML = `<span style="color:#aaa">Chờ xác nhận</span>`;
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.innerHTML = '<i class="fas fa-trash-alt" style="color:gray"></i>';
+        cancelBtn.title = 'Hủy yêu cầu';
+        cancelBtn.onclick = () => deleteFriendRequest(req.id);
+
+        actions.appendChild(cancelBtn);
 
         li.appendChild(info);
-        li.appendChild(status);
+        li.appendChild(actions);
         sentList.appendChild(li);
       });
     }
@@ -1478,14 +1998,15 @@ async function onClickNotification(noti) {
     console.log('table', table, 'targetId', targetId);
     if (table === 'conversations') {
       setCurrentConversation(targetId); // Tự động vào cuộc trò chuyện
-    } else if (table === 'friend_requests') {
+    } else if (table === 'friend_request') {
       toggleFriendRequestsList();
     } else if (table === 'friends') {
       toggleFriendsList();
     } else if (table === 'friend_accept') {
       toggleFriendsList();
+    } else if (table === 'report') {
+      toggleReportsList();
     }
-
     // Làm mới lại thông báo (ẩn chấm đỏ nếu cần)
     await loadNotifications();
   } catch (err) {
@@ -1588,122 +2109,406 @@ function toggleConversationInfo() {
   if (sidebar.style.display === 'none' || sidebar.classList.contains('hiding')) {
     sidebar.classList.remove('hiding');
     sidebar.style.display = 'flex';
+    // Tải thông tin cuộc trò chuyện khi mở sidebar
+    if (currentConversationId) {
+      loadConversationInfo();
+    }
   } else {
     sidebar.classList.add('hiding');
     setTimeout(() => {
       sidebar.style.display = 'none';
       sidebar.classList.remove('hiding');
-    }, 300); // match thời gian trong transition CSS
+    }, 300);
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  // Kiểm tra xem có conversationId được lưu từ lần reload trước không
-  const lastConversationId = localStorage.getItem('lastConversationId');
-  if (lastConversationId) {
-    currentConversationId = lastConversationId;
-    localStorage.removeItem('lastConversationId');
-  }
+// Hàm lấy thông tin cuộc trò chuyện và danh sách thành viên
+async function loadConversationInfo() {
+  const token = localStorage.getItem('access_token');
+  if (!token) return;
 
-  loadConversations();
-  connectWebSocket();
+  // Lấy ID từ thuộc tính data-id của chat-header
+  const chatHeader = document.getElementById('chat-header');
+  const conversationId = chatHeader.dataset.id;
 
-  // Khởi tạo context menu cho file đính kèm
-  initContextMenu({
-    selector: '.has-context',
-    items: [
-      { action: 'download', label: 'Tải xuống' },
-      { action: 'copy', label: 'Sao chép liên kết' },
-    ],
-    onAction: (action, fileUrl, element) => {
-      switch (action) {
-        case 'download': {
-          try {
-            const urlParts = new URL(fileUrl).pathname.split('/');
-            const conversationIdIndex = urlParts.indexOf('conversations') + 1;
-            const conversationId = urlParts[conversationIdIndex];
-            const filename = urlParts.pop();
-            const isImage = /\.(jpg|jpeg|png|gif)$/i.test(filename);
+  try {
+    const response = await fetch(`${config.baseURL}/conversations/${conversationId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
 
-            const downloadUrl = isImage ? `${config.baseURL}/conversations/download/${conversationId}/${filename}` : fileUrl;
+    if (!response.ok) {
+      throw new Error('Không thể tải thông tin cuộc trò chuyện');
+    }
 
-            const a = document.createElement('a');
-            a.href = downloadUrl;
-            a.download = filename;
-            a.style.display = 'none';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+    const conversation = await response.json();
 
-            setTimeout(() => {
-              toast({
-                title: 'Đã gửi yêu cầu tải',
-                message: 'Nếu trình duyệt hỏi vị trí lưu, vui lòng xác nhận.',
-                type: 'info',
+    // Thêm conversation ID vào data attribute của sidebar
+    const sidebar = document.getElementById('conversation-info-sidebar');
+    sidebar.dataset.conversationId = conversationId;
+
+    // Ẩn nút thêm thành viên nếu là cuộc trò chuyện private
+    const addMemberBtn = document.querySelector('.member-actions');
+
+    if (addMemberBtn) {
+      addMemberBtn.style.display = conversation.type === 'private' ? 'none' : 'block';
+    }
+
+    // Kiểm tra xem người dùng hiện tại có phải là admin không
+    const currentUser = getCurrentUser();
+    const isAdmin = conversation.group_members?.find((m) => m.username === currentUser.username)?.role === 'admin';
+
+    // Ẩn nút xóa group nếu không phải admin
+    const deleteBtn = document.querySelector('.conversation-actions .danger-btn');
+    if (deleteBtn) {
+      deleteBtn.style.display = isAdmin ? 'block' : 'none';
+    }
+
+    // Cập nhật UI với thông tin cuộc trò chuyện
+    document.getElementById('conversation-title').textContent = `${conversation.name}`;
+    document.getElementById('conversation-avatar').src = conversation.avatar_url
+      ? `${config.baseURL}/${conversation.avatar_url.replace(/^\/+/, '')}`
+      : '../../assets/image/group-chat-default.jpg';
+
+    // Render danh sách thành viên
+    const memberList = document.getElementById('conversation-members');
+    memberList.innerHTML = '';
+
+    if (conversation.group_members) {
+      // Sắp xếp thành viên: admin trước, sau đó đến thành viên thường
+      const sortedMembers = [...conversation.group_members].sort((a, b) => {
+        if (a.role === 'admin' && b.role !== 'admin') return -1;
+        if (a.role !== 'admin' && b.role === 'admin') return 1;
+        return 0;
+      });
+
+      sortedMembers.forEach((member) => {
+        const li = document.createElement('li');
+        li.className = 'member-item';
+        li.style.cursor = 'pointer';
+
+        const memberInfo = document.createElement('div');
+        memberInfo.className = 'member-info';
+
+        const isCurrentUser = member.username === currentUser.username;
+        const displayName = isCurrentUser ? `${member.nickname || member.username} (Tôi)` : member.nickname || member.username;
+
+        memberInfo.innerHTML = `
+          <span>${displayName}</span>
+          <small>${member.role === 'admin' ? '(Quản trị viên)' : ''}</small>
+        `;
+
+        li.appendChild(memberInfo);
+
+        // Thêm sự kiện click để hiển thị modal thông tin người dùng
+        li.addEventListener('click', async () => {
+          if (isCurrentUser) {
+            // Nếu là bản thân, gọi API lấy thông tin
+            const token = localStorage.getItem('access_token');
+            try {
+              const response = await fetch(`${config.baseURL}/users/`, {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
               });
-            }, 300);
-          } catch (e) {
-            console.error('Tải file thất bại:', e);
-            toast({
-              title: 'Lỗi',
-              message: 'Không thể tải file',
-              type: 'error',
-            });
+
+              if (response.ok) {
+                const userData = await response.json();
+                // Hiển thị modal với thông tin bản thân
+                const modal = document.getElementById('user-info-modal');
+                modal.dataset.username = userData.username;
+                modal.dataset.userId = userData.user_id;
+
+                const avatarImg = document.getElementById('user-avatar');
+                avatarImg.src = userData.avatar
+                  ? `${config.baseURL}/${userData.avatar.replace(/^\/+/, '')}`
+                  : '../../assets/image/private-chat-default.jpg';
+                avatarImg.onerror = () => {
+                  avatarImg.src = '../../assets/image/private-chat-default.jpg';
+                };
+
+                document.getElementById('user-username').textContent = userData.username;
+                document.getElementById('user-nickname').textContent = userData.nickname || 'string';
+                document.getElementById('user-email').textContent = userData.email || 'user@example.com';
+
+                // Ẩn các nút không cần thiết
+                document.getElementById('add-friend-btn').style.display = 'none';
+                document.getElementById('unfriend-btn').style.display = 'none';
+                document.getElementById('report-user-btn').style.display = 'none';
+
+                // Hiển thị modal
+                modal.style.display = 'flex';
+              }
+            } catch (error) {
+              console.error('Lỗi khi lấy thông tin người dùng:', error);
+              toast({
+                title: 'Lỗi',
+                message: 'Không thể tải thông tin người dùng',
+                type: 'error',
+              });
+            }
+          } else {
+            // Nếu là thành viên khác, hiển thị modal thông tin
+            showUserInfo(member.username);
           }
-          break;
+        });
+
+        // Nếu người dùng là admin, hiển thị các nút quản lý
+        if (isAdmin && member.role !== 'admin') {
+          const actions = document.createElement('div');
+          actions.className = 'member-actions';
+
+          // Nút chỉ định làm admin
+          const makeAdminBtn = document.createElement('button');
+          makeAdminBtn.innerHTML = '<i class="fas fa-crown"></i>';
+          makeAdminBtn.className = 'make-admin-btn';
+          makeAdminBtn.title = 'Chỉ định làm admin';
+          makeAdminBtn.onclick = () => makeAdmin(conversationId, member.username);
+          actions.appendChild(makeAdminBtn);
+
+          // Nút xóa thành viên
+          const removeBtn = document.createElement('button');
+          removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+          removeBtn.className = 'remove-member-btn';
+          removeBtn.title = 'Xóa thành viên';
+          removeBtn.onclick = () => removeMember(conversationId, member.username);
+          actions.appendChild(removeBtn);
+
+          li.appendChild(actions);
         }
 
-        case 'copy':
-          navigator.clipboard
-            .writeText(fileUrl)
-            .then(() => {
-              toast({
-                title: 'Thành công!',
-                message: 'Đã sao chép liên kết thành công!',
-                type: 'success',
-              });
-            })
-            .catch(() => {
-              toast({ title: 'Sao chép thất bại', type: 'error' });
-            });
-          break;
+        memberList.appendChild(li);
+      });
+    }
+  } catch (error) {
+    console.error('Lỗi khi tải thông tin cuộc trò chuyện:', error);
+    toast({
+      title: 'Lỗi',
+      message: 'Không thể tải thông tin cuộc trò chuyện',
+      type: 'error',
+    });
+  }
+}
+
+// Hàm chỉ định thành viên làm admin
+async function makeAdmin(conversationId, username) {
+  createModal({
+    title: 'Xác nhận chỉ định admin',
+    message: `Bạn có chắc chắn muốn chỉ định ${username} làm quản trị viên không?`,
+    primaryButtonText: 'Xác nhận',
+    secondaryButtonText: 'Hủy',
+    showSecondaryButton: true,
+    onPrimary: async () => {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+
+      try {
+        const response = await fetch(`${config.baseURL}/conversations/${conversationId}/members/${username}/admin`, {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          const result = await response.json();
+          toast({
+            title: 'Lỗi',
+            message: result.detail || 'Không thể chỉ định admin',
+            type: 'error',
+          });
+          return;
+        }
+
+        toast({
+          title: 'Thành công',
+          message: 'Đã chỉ định admin thành công',
+          type: 'success',
+        });
+
+        // Cập nhật lại danh sách thành viên
+        loadConversationInfo();
+      } catch (error) {
+        console.error('Lỗi khi chỉ định admin:', error);
+        toast({
+          title: 'Lỗi',
+          message: 'Không thể kết nối đến máy chủ',
+          type: 'error',
+        });
       }
     },
   });
+}
 
-  document.querySelector('.conversation-list .search').addEventListener('input', function (e) {
-    const searchValue = e.target.value.toLowerCase().trim();
-    const chatItems = document.querySelectorAll('.chat-list .chat-item');
-    const noResultItem = document.querySelector('.chat-list .no-results');
+// Hàm thêm thành viên mới
+async function addMember(conversationId, username) {
+  const token = localStorage.getItem('access_token');
+  if (!token) return;
 
-    let visibleCount = 0;
-
-    chatItems.forEach((item) => {
-      const name = item.dataset.conversationName?.toLowerCase() || '';
-      if (name.includes(searchValue)) {
-        item.style.display = 'flex';
-        visibleCount++;
-      } else {
-        item.style.display = 'none';
-      }
+  try {
+    const response = await fetch(`${config.baseURL}/conversations/${conversationId}/members?new_member_username=${username}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
     });
 
-    // Hiển thị dòng "Không tìm thấy" nếu không có mục nào khớp
-    if (visibleCount === 0) {
-      noResultItem.style.display = 'block';
-    } else {
-      noResultItem.style.display = 'none';
+    const result = await response.json();
+
+    if (!response.ok) {
+      toast({
+        title: 'Lỗi',
+        message: result.detail || 'Không thể thêm thành viên vào nhóm',
+        type: 'error',
+      });
+      return;
     }
+
+    toast({
+      title: 'Thành công',
+      message: 'Đã thêm thành viên vào nhóm',
+      type: 'success',
+    });
+
+    // Cập nhật lại danh sách thành viên
+    loadConversationInfo();
+  } catch (error) {
+    console.error('Lỗi khi thêm thành viên:', error);
+    toast({
+      title: 'Lỗi',
+      message: 'Không thể kết nối đến máy chủ',
+      type: 'error',
+    });
+  }
+}
+
+// Hàm xóa thành viên
+async function removeMember(conversationId, username) {
+  createModal({
+    title: 'Xác nhận xóa thành viên',
+    message: `Bạn có chắc chắn muốn xóa ${username} khỏi nhóm không?`,
+    primaryButtonText: 'Xóa',
+    secondaryButtonText: 'Hủy',
+    showSecondaryButton: true,
+    onPrimary: async () => {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+
+      try {
+        const response = await fetch(`${config.baseURL}/conversations/${conversationId}/members/${username}`, {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          const result = await response.json();
+          toast({
+            title: 'Lỗi',
+            message: result.detail || 'Không thể xóa thành viên khỏi nhóm',
+            type: 'error',
+          });
+          return;
+        }
+
+        toast({
+          title: 'Thành công',
+          message: 'Đã xóa thành viên khỏi nhóm',
+          type: 'success',
+        });
+
+        // Cập nhật lại danh sách thành viên
+        loadConversationInfo();
+      } catch (error) {
+        console.error('Lỗi khi xóa thành viên:', error);
+        toast({
+          title: 'Lỗi',
+          message: 'Không thể kết nối đến máy chủ',
+          type: 'error',
+        });
+      }
+    },
   });
+}
 
-  // Ngăn context menu toàn trang, chỉ cho phép ở .has-context
-  // document.addEventListener('contextmenu', function (e) {
-  //   if (!e.target.closest('.has-context')) {
-  //     e.preventDefault();
-  //   }
-  // });
-});
+// Hàm xóa cuộc trò chuyện
+async function deleteConversation(conversationId) {
+  createModal({
+    title: 'Xác nhận xóa cuộc trò chuyện',
+    message: 'Bạn có chắc chắn muốn xóa cuộc trò chuyện này không? Hành động này không thể hoàn tác.',
+    primaryButtonText: 'Xóa',
+    secondaryButtonText: 'Hủy',
+    showSecondaryButton: true,
+    onPrimary: async () => {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
 
+      try {
+        const response = await fetch(`${config.baseURL}/conversations/${conversationId}`, {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          const result = await response.json();
+          toast({
+            title: 'Lỗi',
+            message: result.detail || 'Không thể xóa cuộc trò chuyện',
+            type: 'error',
+          });
+          return;
+        }
+
+        toast({
+          title: 'Thành công',
+          message: 'Đã xóa cuộc trò chuyện',
+          type: 'success',
+        });
+
+        // Đóng sidebar thông tin
+        toggleConversationInfo();
+
+        // Cập nhật lại danh sách cuộc trò chuyện
+        loadConversations();
+      } catch (error) {
+        console.error('Lỗi khi xóa cuộc trò chuyện:', error);
+        toast({
+          title: 'Lỗi',
+          message: 'Không thể kết nối đến máy chủ',
+          type: 'error',
+        });
+      }
+    },
+  });
+}
+
+// Hàm mở modal thêm thành viên
+function openAddMemberModal() {
+  createModal({
+    title: 'Thêm thành viên',
+    message: 'Nhập tên người dùng cần thêm:',
+    primaryButtonText: 'Thêm',
+    secondaryButtonText: 'Hủy',
+    showInput: true,
+    inputPlaceholder: 'Tên người dùng',
+    onPrimary: (username) => {
+      if (username.trim()) {
+        addMember(currentConversationId, username.trim());
+      }
+    },
+  });
+}
+
+// Thêm vào window để có thể gọi từ HTML
 window.logout = logout;
 window.sendMessage = sendMessage;
 window.sendImage = sendImage;
@@ -1720,3 +2525,35 @@ window.markSelectedNoti = markSelectedNoti;
 window.deleteSelectedNoti = deleteSelectedNoti;
 window.checkUnreadNotifications = checkUnreadNotifications;
 window.toggleConversationInfo = toggleConversationInfo;
+window.openAddMemberModal = openAddMemberModal;
+window.confirmDeleteConversation = deleteConversation;
+window.makeAdmin = makeAdmin;
+
+// Hàm tìm kiếm cuộc hội thoại
+function searchConversations() {
+  const searchInput = document.querySelector('#conversation-list .search');
+  const filter = searchInput.value.toLowerCase();
+  const chatList = document.querySelector('.chat-list');
+  const chatItems = chatList.querySelectorAll('.chat-item');
+
+  let hasResults = false; // Biến để kiểm tra có kết quả hay không
+
+  chatItems.forEach((item) => {
+    const conversationName = item.dataset.conversationName.toLowerCase();
+    if (conversationName.includes(filter)) {
+      item.style.display = ''; // Hiện cuộc hội thoại
+      hasResults = true; // Có ít nhất một kết quả
+    } else {
+      item.style.display = 'none'; // Ẩn cuộc hội thoại
+    }
+  });
+
+  // Hiển thị thông báo nếu không tìm thấy cuộc hội thoại nào
+  const noResultItem = chatList.querySelector('.no-results');
+  if (noResultItem) {
+    noResultItem.style.display = hasResults ? 'none' : 'block';
+  }
+}
+
+// Gắn sự kiện cho ô tìm kiếm
+document.querySelector('#conversation-list .search').addEventListener('input', searchConversations);

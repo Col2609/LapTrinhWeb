@@ -4,6 +4,7 @@ import config from '../config.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const registerForm = document.getElementById('registerForm');
+  const API_BASE = 'http://localhost:8000/auth';
 
   const passwordField = document.getElementById('password');
   const confirmPasswordField = document.getElementById('comfirmpassword');

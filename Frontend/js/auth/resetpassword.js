@@ -82,16 +82,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!password || !confirmPassword) {
       passwordError.textContent = 'Vui lòng nhập đầy đủ thông tin!';
+      canSubmit = true;
+      submitButton.disabled = false;
       return;
     }
 
     if (password !== confirmPassword) {
       passwordError.textContent = 'Mật khẩu không khớp!';
+      canSubmit = true;
+      submitButton.disabled = false;
       return;
     }
 
     try {
-      const response = await fetch(`${config.API_BASE_URL}/auth/password/reset-confirm`, {
+      const response = await fetch(`${config.baseURL}/auth/password/reset-confirm`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -116,9 +120,11 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         toast({
           title: 'Lỗi',
-          message: result.detail || 'Có lỗi xảy ra. Thử lại sau.',
+          message: result.message || 'Có lỗi xảy ra. Thử lại sau.',
           type: 'error',
         });
+        canSubmit = true;
+        submitButton.disabled = false;
       }
     } catch (err) {
       toast({
@@ -126,12 +132,9 @@ document.addEventListener('DOMContentLoaded', () => {
         message: 'Không thể kết nối đến máy chủ. Thử lại sau.',
         type: 'error',
       });
-    }
-
-    setTimeout(() => {
       canSubmit = true;
       submitButton.disabled = false;
-    }, 1000);
+    }
 
     setTimeout(() => {
       submitAttempts = 0;

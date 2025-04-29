@@ -1,6 +1,8 @@
+const BASE = 'http://localhost:8000';
+
 const config = {
-  baseURL: 'http://localhost/LapTrinhWeb/BackEnd',
-  wsUrl: 'http://localhost/LapTrinhWeb/BackEnd',
+  baseURL: BASE,
+  wsUrl: BASE,
 };
 
 export default config;
