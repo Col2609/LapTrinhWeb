@@ -14,7 +14,7 @@ class UserController extends Controller
         $this->response(['message' => 'Successful', 'users' => $users]);
     }
 
-    public function create()
+    public function register()
     {
         // Nhận dữ liệu từ body request
         $data = json_decode(file_get_contents('php://input'), true);

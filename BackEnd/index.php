@@ -22,9 +22,9 @@ switch ($request) {
         $controller->index(); // GET list users
         break;
 
-    case '/users/create':
+    case '/users/register':
         $controller = new Controllers\UserController();
-        $controller->create(); // POST create user
+        $controller->register(); // POST create user
         break;
 
     case '/users/login':
