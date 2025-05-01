@@ -23,24 +23,37 @@ class Message extends Model
 
     public function getMessages($page = 1, $limit = 50)
     {
-        $offset = ($page - 1) * $limit;
-        
-        $stmt = $this->db->prepare('
-            SELECT 
-                m.message_id,
-                m.content,
-                m.timestamp,
-                u.user_id,
-                u.username,
-                u.nickname,
-                u.avatar
-            FROM messages m
-            LEFT JOIN users u ON m.sender_id = u.user_id
-            ORDER BY m.timestamp DESC
-            LIMIT ? OFFSET ?
-        ');
-        
-        $stmt->execute([$limit, $offset]);
-        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        try {
+            $offset = ($page - 1) * $limit;
+            
+            $sql = '
+                SELECT 
+                    m.message_id,
+                    m.content,
+                    m.timestamp,
+                    u.user_id,
+                    u.username,
+                    u.nickname,
+                    u.avatar
+                FROM messages m
+                LEFT JOIN users u ON m.sender_id = u.user_id
+                ORDER BY m.timestamp DESC
+                LIMIT ? OFFSET ?
+            ';
+            
+            error_log("SQL Query: $sql");
+            error_log("Parameters: limit=$limit, offset=$offset");
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$limit, $offset]);
+            
+            $results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            error_log("Found " . count($results) . " messages");
+            
+            return $results;
+        } catch (\PDOException $e) {
+            error_log("Database error in getMessages: " . $e->getMessage());
+            throw $e;
+        }
     }
 }

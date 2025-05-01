@@ -130,10 +130,10 @@ switch ($request) {
         $controller = new Controllers\MessageController();
         switch ($_SERVER['REQUEST_METHOD']) {
             case 'GET':
-                $controller->getMessages();
+                $controller->getMessages(); // Xử lý GET request
                 break;
             case 'POST':
-                $controller->sendMessage();
+                $controller->sendMessage(); // Xử lý POST request
                 break;
             default:
                 http_response_code(405);

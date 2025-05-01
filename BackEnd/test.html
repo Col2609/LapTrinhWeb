@@ -217,33 +217,62 @@
         ws = new WebSocket(WS_URL);
 
         ws.onmessage = function (event) {
-          const message = JSON.parse(event.data);
-          appendMessage(message);
+          try {
+            const message = JSON.parse(event.data);
+            console.log('Received message:', message); // Debug
+            appendMessage(message);
+          } catch (error) {
+            console.error('Error parsing message:', error);
+          }
+        };
+
+        ws.onopen = function () {
+          console.log('WebSocket connected');
         };
 
         ws.onclose = function () {
           console.log('WebSocket đã đóng kết nối');
-          setTimeout(connectWebSocket, 1000); // Thử kết nối lại sau 1 giây
+          setTimeout(connectWebSocket, 1000);
+        };
+
+        ws.onerror = function (error) {
+          console.error('WebSocket error:', error);
         };
       }
 
       // Tải tin nhắn cũ
+      // Tải tin nhắn cũ
       async function loadMessages() {
         try {
+          console.log('Loading messages...');
+          console.log('Token:', token); // Kiểm tra token
+
           const response = await fetch(`${API_URL}/messages?limit=50`, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
           });
 
+          console.log('Response status:', response.status);
           const data = await response.json();
+          console.log('Response data:', data);
+
           if (response.ok) {
             const container = document.getElementById('messageContainer');
             container.innerHTML = '';
-            data.messages.reverse().forEach(appendMessage);
+            if (data.messages && Array.isArray(data.messages)) {
+              data.messages.reverse().forEach((message) => {
+                console.log('Processing message:', message);
+                appendMessage(message);
+              });
+            } else {
+              console.error('Invalid messages data:', data);
+            }
+          } else {
+            console.error('Error loading messages:', data.message);
           }
         } catch (error) {
-          console.error('Lỗi khi tải tin nhắn:', error);
+          console.error('Error in loadMessages:', error);
         }
       }
 
@@ -265,9 +294,10 @@
           });
 
           const data = await response.json();
+          console.log('Send response:', data); // Debug
+
           if (response.ok) {
             input.value = '';
-            // Gửi tin nhắn qua WebSocket
             if (ws && ws.readyState === WebSocket.OPEN) {
               ws.send(JSON.stringify(data.data));
             }
@@ -285,12 +315,16 @@
         const div = document.createElement('div');
         div.className = 'message';
 
-        const time = new Date(message.timestamp).toLocaleString();
+        // Kiểm tra dữ liệu trước khi hiển thị
+        const senderName = message.sender ? message.sender.nickname || message.sender.username : 'Unknown';
+        const time = message.timestamp ? new Date(message.timestamp).toLocaleString() : '';
+        const content = message.content || '';
+
         div.innerHTML = `
-                <span class="sender">${message.sender.nickname || message.sender.username}</span>
-                <span class="time">${time}</span>
-                <div class="content">${message.content}</div>
-            `;
+          <span class="sender">${senderName}</span>
+          <span class="time">${time}</span>
+          <div class="content">${content}</div>
+        `;
 
         container.appendChild(div);
         container.scrollTop = container.scrollHeight;

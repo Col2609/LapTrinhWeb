@@ -17,7 +17,47 @@ class MessageController extends Controller
         $this->userModel = new User();
     }
 
-    // Gửi tin nhắn
+    // Phương thức GET - Lấy danh sách tin nhắn
+    public function getMessages()
+    {
+        $token = $this->getBearerToken();
+        if (!$token) {
+            return $this->response(['message' => 'Unauthorized'], 401);
+        }
+
+        $decoded = \Core\JwtHelper::verifyToken($token);
+        if (!$decoded) {
+            return $this->response(['message' => 'Invalid token'], 401);
+        }
+
+        // Không cần kiểm tra content ở đây vì đây là GET request
+        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
+
+        try {
+            $messages = $this->messageModel->getMessages($page, $limit);
+            
+            $formattedMessages = array_map(function($message) {
+                return [
+                    'message_id' => (int)$message['message_id'],
+                    'content' => $message['content'],
+                    'timestamp' => $message['timestamp'],
+                    'sender' => [
+                        'user_id' => (int)$message['user_id'],
+                        'username' => $message['username'],
+                        'nickname' => $message['nickname'],
+                        'avatar' => $message['avatar']
+                    ]
+                ];
+            }, $messages);
+
+            return $this->response(['messages' => $formattedMessages]);
+        } catch (\Exception $e) {
+            return $this->response(['message' => 'Error fetching messages'], 500);
+        }
+    }
+
+    // Phương thức POST - Gửi tin nhắn mới
     public function sendMessage()
     {
         $token = $this->getBearerToken();
@@ -35,6 +75,7 @@ class MessageController extends Controller
             return $this->response(['message' => 'User not found'], 404);
         }
 
+        // Chỉ kiểm tra content trong POST request
         $data = json_decode(file_get_contents('php://input'), true);
         if (!isset($data['content'])) {
             return $this->response(['message' => 'Content is required'], 400);
@@ -45,43 +86,22 @@ class MessageController extends Controller
             'content' => $data['content']
         ]);
 
-        // Tạo message data để trả về
         $messageData = [
             'message_id' => $messageId,
+            'content' => $data['content'],
+            'timestamp' => date('Y-m-d H:i:s'),
             'sender' => [
-                'user_id' => $user['user_id'],
+                'user_id' => (int)$user['user_id'],
                 'username' => $user['username'],
                 'nickname' => $user['nickname'],
                 'avatar' => $user['avatar']
-            ],
-            'content' => $data['content'],
-            'timestamp' => date('Y-m-d H:i:s')
+            ]
         ];
 
         return $this->response([
             'message' => 'Message sent successfully',
             'data' => $messageData
         ]);
-    }
-
-    // Lấy lịch sử tin nhắn
-    public function getMessages()
-    {
-        $token = $this->getBearerToken();
-        if (!$token) {
-            return $this->response(['message' => 'Unauthorized'], 401);
-        }
-
-        $decoded = \Core\JwtHelper::verifyToken($token);
-        if (!$decoded) {
-            return $this->response(['message' => 'Invalid token'], 401);
-        }
-
-        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
-
-        $messages = $this->messageModel->getMessages($page, $limit);
-        return $this->response(['messages' => $messages]);
     }
 
     private function getBearerToken()
