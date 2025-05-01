@@ -278,7 +278,7 @@ async function submitReport() {
       closeReportModal();
     } else {
       const data = await response.json();
-      throw new Error(data.detail || 'Có lỗi xảy ra');
+      throw new Error(data.message || 'Có lỗi xảy ra');
     }
   } catch (error) {
     console.error('Error submitting report:', error);
@@ -473,7 +473,7 @@ async function deleteReport(reportId) {
       fetchReports(); // Làm mới danh sách
     } else {
       const data = await response.json();
-      throw new Error(data.detail || 'Lỗi khi xóa báo cáo');
+      throw new Error(data.message || 'Lỗi khi xóa báo cáo');
     }
   } catch (err) {
     toast({

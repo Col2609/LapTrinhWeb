@@ -176,7 +176,7 @@ function handleUpdate(token) {
     })
       .then(async (res) => {
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Cập nhật thất bại.');
+        if (!res.ok) throw new Error(data.message || 'Cập nhật thất bại.');
 
         toast({
           title: 'Thành công',
@@ -362,7 +362,7 @@ function handleChangePassword(token) {
     .then(async (response) => {
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.detail || 'Đổi mật khẩu thất bại');
+        throw new Error(data.message || 'Đổi mật khẩu thất bại');
       }
 
       toast({
