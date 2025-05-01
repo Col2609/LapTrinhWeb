@@ -111,47 +111,6 @@ switch ($request) {
         }
         break;
 
-    case '/users/report':
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $controller = new Controllers\UserController();
-            $controller->reportUser(); // POST báo cáo user
-        } else {
-            http_response_code(405);
-            echo json_encode(["message" => "Method Not Allowed"]);
-        }
-        break;
-
-    case '/users/reports':
-        if ($_SERVER['REQUEST_METHOD'] == 'GET') {
-            $controller = new Controllers\UserController();
-            $controller->getUserReports(); // GET danh sách báo cáo
-        } else {
-            http_response_code(405);
-            echo json_encode(["message" => "Method Not Allowed"]);
-        }
-        break;
-
-    case '/users/ban-status':
-        if ($_SERVER['REQUEST_METHOD'] == 'GET') {
-            $controller = new Controllers\UserController();
-            $controller->checkBanStatus(); // GET kiểm tra trạng thái ban
-        } else {
-            http_response_code(405);
-            echo json_encode(["message" => "Method Not Allowed"]);
-        }
-        break;
-
-    case (preg_match('/^\/users\/report\/\d+$/', $request) ? true : false):
-        if ($_SERVER['REQUEST_METHOD'] == 'DELETE') {
-            $report_id = explode('/', $request)[3];  // Lấy report_id từ URL
-            $controller = new Controllers\UserController();
-            $controller->deleteReport($report_id); // DELETE xóa báo cáo
-        } else {
-            http_response_code(405);
-            echo json_encode(["message" => "Method Not Allowed"]);
-        }
-        break;
-
     case '/users/password/change':
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $controller = new Controllers\UserController();
@@ -162,6 +121,27 @@ switch ($request) {
         }
         break;
 
+    case '/messages':
+        $controller = new Controllers\MessageController();
+        $controller->sendMessage(); // POST gửi tin nhắn
+        break;
+
+    case '/messages':
+        $controller = new Controllers\MessageController();
+        switch ($_SERVER['REQUEST_METHOD']) {
+            case 'GET':
+                $controller->getMessages();
+                break;
+            case 'POST':
+                $controller->sendMessage();
+                break;
+            default:
+                http_response_code(405);
+                echo json_encode(["message" => "Method Not Allowed"]);
+                break;
+        }
+        break;
+        
     default:
         http_response_code(404);
         echo json_encode(["message" => "Not Found"]);
