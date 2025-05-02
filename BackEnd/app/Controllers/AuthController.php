@@ -15,7 +15,7 @@ class AuthController extends Controller
     {
         $user = new User();
         $users = $user->getAll();
-        $this->response(['message' => 'Successful', 'users' => $users]);
+        $this->response(['message' => 'Thành công', 'users' => $users]);
     }
 
     public function register()
@@ -23,11 +23,11 @@ class AuthController extends Controller
         $data = json_decode(file_get_contents('php://input'), true);
 
         if (!isset($data['username'], $data['nickname'], $data['email'], $data['password'])) {
-            return $this->response(['message' => 'Missing fields'], 400);
+            return $this->response(['message' => 'Thiếu thông tin'], 400);
         }
 
         if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            return $this->response(['message' => 'Invalid email format'], 400);
+            return $this->response(['message' => 'Email không hợp lệ'], 400);
         }
 
         // Kiểm tra mật khẩu
@@ -57,7 +57,7 @@ class AuthController extends Controller
         $newUser = $userModel->getByUsername($data['username']);
 
         $accessToken = JwtHelper::generateToken($newUser);
-        $refreshToken = JwtHelper::generateToken($newUser); // Nếu cần, có thể tạo refresh khác
+        $refreshToken = JwtHelper::generateToken($newUser);
 
         return $this->response([
             'access_token' => $accessToken,
@@ -82,7 +82,7 @@ class AuthController extends Controller
     {
         // Kiểm tra Content-Type
         $contentType = isset($_SERVER["CONTENT_TYPE"]) ? trim($_SERVER["CONTENT_TYPE"]) : '';
-        
+
         // Lấy dữ liệu từ request
         if (strpos($contentType, "application/json") !== false) {
             // Nếu là JSON
@@ -93,7 +93,7 @@ class AuthController extends Controller
         }
 
         if (!isset($data['username'], $data['password'])) {
-            return $this->response(['message' => 'Missing username or password'], 400);
+            return $this->response(['message' => 'Thiếu tên đăng nhập hoặc mật khẩu'], 400);
         }
 
         $userModel = new User();
@@ -136,7 +136,7 @@ class AuthController extends Controller
         if ($userData) {
             $this->response(['message' => 'Successful', 'user' => $userData]);
         } else {
-            $this->response(['message' => 'User not found'], 404);
+            $this->response(['message' => 'Không tìm thấy người dùng'], 404);
         }
     }
 
@@ -151,7 +151,7 @@ class AuthController extends Controller
         try {
             // Verify refresh token
             $decoded = JwtHelper::verifyToken($data['refresh_token']);
-            
+
             if (!$decoded) {
                 return $this->response(['message' => 'Refresh token không hợp lệ!'], 401);
             }
@@ -198,7 +198,6 @@ class AuthController extends Controller
                     'created_at_UTC' => $updatedUser['created_at_UTC'],
                 ]
             ]);
-
         } catch (\Exception $e) {
             return $this->response(['message' => 'Refresh token không hợp lệ!'], 401);
         }
@@ -253,7 +252,6 @@ class AuthController extends Controller
 
             EmailHelper::sendEmail($data['email'], $subject, $emailContent);
             return $this->response(['message' => 'Email đặt lại mật khẩu đã được gửi.']);
-
         } catch (\Exception $e) {
             return $this->response(['message' => 'Không thể gửi email, vui lòng thử lại sau!'], 500);
         }
@@ -293,27 +291,14 @@ class AuthController extends Controller
 
             // Cập nhật mật khẩu mới
             $userModel->updatePassword($user['user_id'], $data['new_password']);
-            
+
             // Cập nhật thời gian hoạt động
             $userModel->updateLastActive($user['user_id']);
-
-            // Tạo thông báo
-            $notificationModel = new \Models\Notification();
-            $notificationModel->create(
-                $user['username'],
-                null,
-                'Mật khẩu của bạn đã được đổi thành công.',
-                'system',
-                null,
-                'users',
-                false
-            );
 
             // Xóa reset token
             $resetTokenModel->deleteByUuid($data['reset_uuid']);
 
             return $this->response(['message' => 'Mật khẩu đã được đặt lại thành công!']);
-
         } catch (\PDOException $e) {
             error_log("Database error in resetPasswordConfirm: " . $e->getMessage());
             return $this->response(['message' => 'Lỗi cơ sở dữ liệu: ' . $e->getMessage()], 500);
@@ -322,4 +307,4 @@ class AuthController extends Controller
             return $this->response(['message' => 'Có lỗi xảy ra: ' . $e->getMessage()], 500);
         }
     }
-} 
+}

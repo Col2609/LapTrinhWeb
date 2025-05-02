@@ -19,26 +19,23 @@ class UserController extends Controller
     public function __construct()
     {
         $this->userModel = new User();
-        $this->reportModel = new Report();
-        $this->friendModel = new Friend();
-        $this->friendRequestModel = new FriendRequest();
     }
 
     public function getUserInfo()
     {
         $token = $this->getBearerToken();
         if (!$token) {
-            return $this->response(['message' => 'Unauthorized'], 401);
+            return $this->response(['message' => 'Không được phép truy cập'], 401);
         }
 
         $decoded = JwtHelper::verifyToken($token);
         if (!$decoded) {
-            return $this->response(['message' => 'Invalid token'], 401);
+            return $this->response(['message' => 'Token không hợp lệ'], 401);
         }
 
         $user = $this->userModel->getByUsername($decoded['username']);
         if (!$user) {
-            return $this->response(['message' => 'User not found'], 404);
+            return $this->response(['message' => 'Không tìm thấy người dùng'], 404);
         }
 
         return $this->response([
@@ -63,17 +60,17 @@ class UserController extends Controller
 
         $token = $this->getBearerToken();
         if (!$token) {
-            return $this->response(['message' => 'Unauthorized'], 401);
+            return $this->response(['message' => 'Không được phép truy cập'], 401);
         }
 
         $decoded = JwtHelper::verifyToken($token);
         if (!$decoded) {
-            return $this->response(['message' => 'Invalid token'], 401);
+            return $this->response(['message' => 'Token không hợp lệ'], 401);
         }
 
         $user = $this->userModel->getByUsername($decoded['username']);
         if (!$user) {
-            return $this->response(['message' => 'User not found'], 404);
+            return $this->response(['message' => 'Không tìm thấy người dùng'], 404);
         }
 
         // Kiểm tra nếu là admin
@@ -100,7 +97,7 @@ class UserController extends Controller
             $email = trim($_POST['email']);
             if (!empty($email)) {
                 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                    return $this->response(['message' => 'Invalid email format'], 400);
+                    return $this->response(['message' => 'Định dạng email không hợp lệ'], 400);
                 }
 
                 // Kiểm tra email đã tồn tại
@@ -139,7 +136,7 @@ class UserController extends Controller
                     if (file_exists($user['avatar'])) {
                         unlink($user['avatar']);
                     }
-                } catch (Exception $e) {
+                } catch (\Exception $e) {
                     error_log("Lỗi khi xóa avatar cũ: " . $e->getMessage());
                 }
             }
@@ -167,7 +164,7 @@ class UserController extends Controller
 
         if (!$hasUpdate) {
             return $this->response([
-                'message' => 'No valid data to update',
+                'message' => 'Không có dữ liệu hợp lệ để cập nhật',
                 'debug_info' => [
                     'method' => $_SERVER['REQUEST_METHOD'],
                     'content_type' => $_SERVER['CONTENT_TYPE'],
@@ -178,7 +175,7 @@ class UserController extends Controller
         }
 
         if (!$this->userModel->update($user['user_id'], $data)) {
-            return $this->response(['message' => 'Failed to update user info'], 500);
+            return $this->response(['message' => 'Cập nhật thông tin người dùng thất bại'], 500);
         }
 
         $updatedUser = $this->userModel->getByUsername($user['username']);
@@ -196,17 +193,17 @@ class UserController extends Controller
     {
         $token = $this->getBearerToken();
         if (!$token) {
-            return $this->response(['message' => 'Unauthorized'], 401);
+            return $this->response(['message' => 'Không được phép truy cập'], 401);
         }
 
         $decoded = JwtHelper::verifyToken($token);
         if (!$decoded) {
-            return $this->response(['message' => 'Invalid token'], 401);
+            return $this->response(['message' => 'Token không hợp lệ'], 401);
         }
 
         $user = $this->userModel->getByUsername($decoded['username']);
         if (!$user) {
-            return $this->response(['message' => 'User not found'], 404);
+            return $this->response(['message' => 'Không tìm thấy người dùng'], 404);
         }
 
         // Chặn admin tự xóa tài khoản
@@ -214,54 +211,10 @@ class UserController extends Controller
             return $this->response(['message' => 'Admin không thể xóa tài khoản.'], 403);
         }
 
-        /*
-    // Kiểm tra nếu người dùng là admin của nhóm nào đó
-    $conversations = $this->conversationModel->getGroupConversationsByUserId($user['user_id']);
-    foreach ($conversations as $conversation) {
-        $newAdmin = $this->groupMemberModel->findNewAdmin($conversation['conversation_id'], $user['username']);
-        if ($newAdmin) {
-            $this->groupMemberModel->updateRole($newAdmin['id'], 'admin');
-        } else {
-            $this->conversationModel->delete($conversation['conversation_id']);
-        }
-
-        $this->groupMemberModel->deleteByUserAndConversation($user['username'], $conversation['conversation_id']);
-    }
-
-    // Xử lý cuộc trò chuyện private
-    $privateConversations = $this->conversationModel->getPrivateConversationsByUserId($user['user_id']);
-    foreach ($privateConversations as $conversation) {
-        $participants = $this->groupMemberModel->getParticipantsByConversationId($conversation['conversation_id']);
-        if (count($participants) == 2 && in_array($user['username'], array_column($participants, 'username'))) {
-            $this->groupMemberModel->deleteByUserAndConversation($user['username'], $conversation['conversation_id']);
-        }
-
-        if (count($participants) <= 1) {
-            $this->conversationModel->delete($conversation['conversation_id']);
-            $this->groupMemberModel->deleteOrphanedMembers();
-        }
-    }
-    */
-
         // Xóa avatar nếu có
         if (!empty($user['avatar']) && file_exists($user['avatar'])) {
             unlink($user['avatar']);
         }
-
-        /*
-    // Cập nhật sender_id, receiver_id của tin nhắn thành NULL
-    $this->messageModel->nullifySenderId($user['user_id']);
-
-    // Set id_target trong Report và Warning thành NULL
-    $this->reportModel->nullifyTargetId($user['user_id']);
-    $this->warningModel->nullifyTargetId($user['user_id']);
-
-    // Xóa các bản ghi không cần thiết
-    $this->notificationModel->deleteOrphanedNotifications();
-    $this->groupMemberModel->deleteOrphanedMembers();
-    $this->warningModel->deleteOrphanedWarnings();
-    $this->reportModel->deleteOrphanedReports();
-    */
 
         // Xóa tài khoản
         $this->userModel->delete($user['user_id']);
@@ -275,12 +228,12 @@ class UserController extends Controller
     {
         $token = $this->getBearerToken();
         if (!$token) {
-            return $this->response(['message' => 'Unauthorized'], 401);
+            return $this->response(['message' => 'Không được phép truy cập'], 401);
         }
 
         $decoded = JwtHelper::verifyToken($token);
         if (!$decoded) {
-            return $this->response(['message' => 'Invalid token'], 401);
+            return $this->response(['message' => 'Token không hợp lệ'], 401);
         }
 
         $query = $_GET['query'] ?? '';
@@ -292,7 +245,7 @@ class UserController extends Controller
 
         $currentUser = $this->userModel->getByUsername($decoded['username']);
         if (!$currentUser) {
-            return $this->response(['message' => 'User not found'], 404);
+            return $this->response(['message' => 'Không tìm thấy người dùng'], 404);
         }
 
         // Tìm kiếm người dùng
@@ -339,107 +292,16 @@ class UserController extends Controller
         return $this->response(['results' => $results]);
     }
 
-    public function reportUser()
-    {
-        $token = $this->getBearerToken();
-        if (!$token) {
-            return $this->response(['message' => 'Unauthorized'], 401);
-        }
-
-        $decoded = JwtHelper::verifyToken($token);
-        if (!$decoded) {
-            return $this->response(['message' => 'Invalid token'], 401);
-        }
-
-        $data = json_decode(file_get_contents('php://input'), true);
-        if (!isset($data['target_id'], $data['description'])) {
-            return $this->response(['message' => 'Missing required fields'], 400);
-        }
-
-        $reporter = $this->userModel->getByUsername($decoded['username']);
-        $target = $this->userModel->getById($data['target_id']);
-
-        if (!$target) {
-            return $this->response(['message' => 'Target user not found'], 404);
-        }
-
-        $this->reportModel->create($reporter['user_id'], $target['user_id'], $data['description']);
-        return $this->response(['message' => 'User reported successfully']);
-    }
-
-    public function getUserReports()
-    {
-        $token = $this->getBearerToken();
-        if (!$token) {
-            return $this->response(['message' => 'Unauthorized'], 401);
-        }
-
-        $decoded = JwtHelper::verifyToken($token);
-        if (!$decoded) {
-            return $this->response(['message' => 'Invalid token'], 401);
-        }
-
-        $user = $this->userModel->getByUsername($decoded['username']);
-        if (!$user['is_admin']) {
-            return $this->response(['message' => 'Unauthorized'], 403);
-        }
-
-        $reports = $this->reportModel->getAll();
-        return $this->response(['reports' => $reports]);
-    }
-
-    public function checkBanStatus()
-    {
-        $token = $this->getBearerToken();
-        if (!$token) {
-            return $this->response(['message' => 'Unauthorized'], 401);
-        }
-
-        $decoded = JwtHelper::verifyToken($token);
-        if (!$decoded) {
-            return $this->response(['message' => 'Invalid token'], 401);
-        }
-
-        $user = $this->userModel->getByUsername($decoded['username']);
-        return $this->response(['is_banned' => $user['is_banned']]);
-    }
-
-    public function deleteReport($report_id)
-    {
-        $token = $this->getBearerToken();
-        if (!$token) {
-            return $this->response(['message' => 'Unauthorized'], 401);
-        }
-
-        $decoded = JwtHelper::verifyToken($token);
-        if (!$decoded) {
-            return $this->response(['message' => 'Invalid token'], 401);
-        }
-
-        $user = $this->userModel->getByUsername($decoded['username']);
-        if (!$user['is_admin']) {
-            return $this->response(['message' => 'Unauthorized'], 403);
-        }
-
-        $report = $this->reportModel->getById($report_id);
-        if (!$report) {
-            return $this->response(['message' => 'Report not found'], 404);
-        }
-
-        $this->reportModel->delete($report_id);
-        return $this->response(['message' => 'Report deleted successfully']);
-    }
-
     public function changePassword()
     {
         $token = $this->getBearerToken();
         if (!$token) {
-            return $this->response(['message' => 'Unauthorized'], 401);
+            return $this->response(['message' => 'Không được phép truy cập'], 401);
         }
 
         $decoded = JwtHelper::verifyToken($token);
         if (!$decoded) {
-            return $this->response(['message' => 'Invalid token'], 401);
+            return $this->response(['message' => 'Token không hợp lệ'], 401);
         }
 
         $data = json_decode(file_get_contents('php://input'), true);

@@ -6,7 +6,7 @@ use Core\Controller;
 use Models\Message;
 use Models\User;
 
-class MessageController extends Controller 
+class MessageController extends Controller
 {
     private $messageModel;
     private $userModel;
@@ -22,12 +22,12 @@ class MessageController extends Controller
     {
         $token = $this->getBearerToken();
         if (!$token) {
-            return $this->response(['message' => 'Unauthorized'], 401);
+            return $this->response(['message' => 'Không được phép truy cập'], 401);
         }
 
         $decoded = \Core\JwtHelper::verifyToken($token);
         if (!$decoded) {
-            return $this->response(['message' => 'Invalid token'], 401);
+            return $this->response(['message' => 'Token không hợp lệ'], 401);
         }
 
         // Không cần kiểm tra content ở đây vì đây là GET request
@@ -36,8 +36,8 @@ class MessageController extends Controller
 
         try {
             $messages = $this->messageModel->getMessages($page, $limit);
-            
-            $formattedMessages = array_map(function($message) {
+
+            $formattedMessages = array_map(function ($message) {
                 return [
                     'message_id' => (int)$message['message_id'],
                     'content' => $message['content'],
@@ -53,7 +53,7 @@ class MessageController extends Controller
 
             return $this->response(['messages' => $formattedMessages]);
         } catch (\Exception $e) {
-            return $this->response(['message' => 'Error fetching messages'], 500);
+            return $this->response(['message' => 'Lỗi khi lấy tin nhắn'], 500);
         }
     }
 
@@ -62,23 +62,23 @@ class MessageController extends Controller
     {
         $token = $this->getBearerToken();
         if (!$token) {
-            return $this->response(['message' => 'Unauthorized'], 401);
+            return $this->response(['message' => 'Không được phép truy cập'], 401);
         }
 
         $decoded = \Core\JwtHelper::verifyToken($token);
         if (!$decoded) {
-            return $this->response(['message' => 'Invalid token'], 401);
+            return $this->response(['message' => 'Token không hợp lệ'], 401);
         }
 
         $user = $this->userModel->getByUsername($decoded['username']);
         if (!$user) {
-            return $this->response(['message' => 'User not found'], 404);
+            return $this->response(['message' => 'Không tìm thấy người dùng'], 404);
         }
 
         // Chỉ kiểm tra content trong POST request
         $data = json_decode(file_get_contents('php://input'), true);
         if (!isset($data['content'])) {
-            return $this->response(['message' => 'Content is required'], 400);
+            return $this->response(['message' => 'Nội dung tin nhắn là bắt buộc'], 400);
         }
 
         $messageId = $this->messageModel->create([
@@ -99,7 +99,7 @@ class MessageController extends Controller
         ];
 
         return $this->response([
-            'message' => 'Message sent successfully',
+            'message' => 'Gửi tin nhắn thành công',
             'data' => $messageData
         ]);
     }

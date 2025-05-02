@@ -123,11 +123,6 @@ switch ($request) {
 
     case '/messages':
         $controller = new Controllers\MessageController();
-        $controller->sendMessage(); // POST gửi tin nhắn
-        break;
-
-    case '/messages':
-        $controller = new Controllers\MessageController();
         switch ($_SERVER['REQUEST_METHOD']) {
             case 'GET':
                 $controller->getMessages(); // Xử lý GET request
@@ -141,7 +136,7 @@ switch ($request) {
                 break;
         }
         break;
-        
+
     default:
         http_response_code(404);
         echo json_encode(["message" => "Not Found"]);

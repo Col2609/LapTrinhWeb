@@ -10,7 +10,7 @@ class EmailHelper
     private static function getMailer()
     {
         $mail = new PHPMailer(true);
-        
+
         // Cấu hình SMTP
         $mail->isSMTP();
         $mail->Host = 'smtp.gmail.com';
@@ -28,18 +28,18 @@ class EmailHelper
     {
         try {
             $mail = self::getMailer();
-            
+
             // Người gửi
             $mail->setFrom($mail->Username, 'Chat App');
-            
+
             // Người nhận
             $mail->addAddress($to);
-            
+
             // Nội dung
             $mail->isHTML(true);
             $mail->Subject = $subject;
             $mail->Body = $body;
-            
+
             $mail->send();
             return true;
         } catch (Exception $e) {
@@ -47,4 +47,4 @@ class EmailHelper
             throw new \Exception("Không thể gửi email: " . $e->getMessage());
         }
     }
-} 
+}

@@ -12,20 +12,20 @@ class ChatServer implements MessageComponentInterface
     public function __construct()
     {
         $this->clients = new \SplObjectStorage;
-        echo "Chat Server Started!\n";
+        echo "Máy chủ chat đã khởi động!\n";
     }
 
     public function onOpen(ConnectionInterface $conn)
     {
         $this->clients->attach($conn);
-        echo "New connection! ({$conn->resourceId})\n";
+        echo "Kết nối mới! ({$conn->resourceId})\n";
     }
 
     public function onMessage(ConnectionInterface $from, $msg)
     {
         $numRecv = count($this->clients) - 1;
         echo sprintf(
-            'Connection %d sending message "%s" to %d other connection%s' . "\n",
+            'Kết nối %d gửi tin nhắn "%s" đến %d kết nối khác%s' . "\n",
             $from->resourceId,
             $msg,
             $numRecv,
@@ -40,12 +40,12 @@ class ChatServer implements MessageComponentInterface
     public function onClose(ConnectionInterface $conn)
     {
         $this->clients->detach($conn);
-        echo "Connection {$conn->resourceId} has disconnected\n";
+        echo "Kết nối {$conn->resourceId} đã ngắt\n";
     }
 
     public function onError(ConnectionInterface $conn, \Exception $e)
     {
-        echo "An error has occurred: {$e->getMessage()}\n";
+        echo "Đã xảy ra lỗi: {$e->getMessage()}\n";
         $conn->close();
     }
 }
