@@ -17,11 +17,10 @@ body {
 /* Container */
 .container {
   display: flex;
-  width: 80%;
-  max-width: 1200px;
+  width: 100%;
+  max-width: none;
   flex-grow: 1;
   background: #fff9e6;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   border-radius: 20px;
   overflow: hidden;
   margin: 20px auto;
@@ -667,12 +666,15 @@ footer {
 /* RESPONSIVE */
 @media (max-width: 768px) {
   .container {
-    flex-direction: column;
-    width: 95%;
-    height: auto;
-    max-height: none;
-    margin: 10px auto;
-  }
+  display: flex;
+  width: 100%;
+  max-width: none;
+  flex-grow: 1;
+  background: #fff9e6;
+  border-radius: 20px;
+  overflow: hidden;
+  margin: 20px auto;
+}
 
   .chat-content {
     max-height: 50vh;
@@ -834,6 +836,7 @@ footer {
 }
 
 .sidebar-toggle-container {
+  display: none !important;
   position: absolute;
   top: 50%; /* Đặt điểm giữa */
   left: 10px;
@@ -1480,3 +1483,14 @@ footer {
   color: #999;
   text-align: right;
 }
+
+/* Hide sidebar if any remnants exist */
+.sidebar-toggle-container,
+.conversation-list,
+.friend-list,
+.noti-list,
+.friend-request-list,
+.reports-list {
+  display: none !important;
+}
+
