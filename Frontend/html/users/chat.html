@@ -19,135 +19,7 @@
   <body>
     <div class="container">
       <div id="toast"></div>
-      <div class="sidebar-toggle-container">
-        <!-- Nút Thông báo -->
-        <button onclick="toggleNotiList()" title="Thông báo">
-          <i class="fas fa-bell"></i>
-        </button>
-
-        <!-- Nút Hiển thị cuộc trò chuyện -->
-        <button onclick="toggleChatList()" title="Hiển thị cuộc trò chuyện">
-          <i class="fas fa-comments"></i>
-        </button>
-
-        <!-- Nút Hiển thị bạn bè -->
-        <button onclick="toggleFriendsList()" title="Hiển thị danh sách bạn bè">
-          <i class="fas fa-user-friends"></i>
-        </button>
-
-        <!-- Nút Yêu cầu kết bạn -->
-        <button onclick="toggleFriendRequestsList()" title="Yêu cầu kết bạn">
-          <i class="fas fa-user-clock"></i>
-        </button>
-
-        <!-- Nút Xem báo cáo -->
-        <button onclick="toggleReportsList()" title="Báo cáo của tôi">
-          <i class="fas fa-flag"></i>
-        </button>
-      </div>
-      <aside id="conversation-list" class="conversation-list">
-        <h3>Danh sách trò chuyện</h3>
-
-        <input type="text" class="search" placeholder="Tìm kiếm" />
-        <div class="button-group">
-          <button onclick="openCreateModal('private')" class="add-user-btn">
-            <i class="fa fa-user-plus"></i>
-            <span>Thêm Người Dùng</span>
-          </button>
-
-          <button onclick="openCreateModal('group')" class="add-group-btn">
-            <i class="fa fa-users"></i>
-            <span>Tạo nhóm</span>
-          </button>
-        </div>
-
-        <!-- Danh sách cuộc trò chuyện -->
-        <ul class="chat-list">
-          <li class="no-results" style="display: none; text-align: center; padding: 10px; color: #999">Không tìm thấy cuộc trò chuyện nào.</li>
-        </ul>
-      </aside>
-
-      <!-- Danh sách bạn bè -->
-      <aside id="friend-list" class="friend-list" style="display: none">
-        <h3>Danh sách bạn bè</h3>
-        <input type="text" class="search" placeholder="Tìm kiếm bạn bè..." />
-        <div class="toggle-wrapper">
-          <label class="toggle-switch">
-            <input type="checkbox" id="search-by-nickname" />
-            <span class="slider"></span>
-          </label>
-          <span id="search-label">Username</span>
-        </div>
-        <ul class="friend-items">
-          <!-- Các bạn bè sẽ được render ở đây -->
-        </ul>
-      </aside>
-
-      <!-- Danh sách thông báo -->
-      <aside id="noti-list" class="noti-list" style="display: none">
-        <h3>Thông báo</h3>
-        <div class="noti-filters">
-          <label>
-            <select id="filter-select">
-              <option value="newest" selected>Mới nhất</option>
-              <option value="oldest">Cũ nhất</option>
-              <option value="unread">Chưa đọc</option>
-              <option value="system">Từ hệ thống</option>
-            </select>
-          </label>
-          <button id="apply-filters">Lọc</button>
-        </div>
-        <div class="noti-toolbar">
-          <label>
-            <input type="checkbox" id="select-all-noti" />
-            Chọn tất cả
-          </label>
-          <div class="noti-actions">
-            <button onclick="markSelectedNoti('read')">Đã đọc</button>
-            <button onclick="markSelectedNoti('unread')">Chưa đọc</button>
-            <button onclick="deleteSelectedNoti()">Xoá</button>
-          </div>
-        </div>
-
-        <ul id="noti-items" class="noti-items">
-          <!-- Thông báo sẽ được render ở đây -->
-        </ul>
-      </aside>
-
-      <!-- Danh sách yêu cầu kết bạn -->
-      <aside id="friend-request-list" class="friend-request-list" style="display: none">
-        <h3>Yêu cầu kết bạn</h3>
-
-        <div class="request-section">
-          <h4>Yêu cầu đến</h4>
-          <ul id="received-requests" class="request-items"></ul>
-        </div>
-
-        <div class="request-section">
-          <h4>Đã gửi</h4>
-          <ul id="sent-requests" class="request-items"></ul>
-        </div>
-      </aside>
-
-      <!-- Danh sách báo cáo -->
-      <aside id="reports-list" class="reports-list" style="display: none">
-        <h3>Báo cáo của tôi</h3>
-
-        <div class="report-filters">
-          <label for="report-status">Chọn trạng thái báo cáo:</label>
-          <select id="report-status" class="report-filter">
-            <option value="all" selected>Tất cả</option>
-            <option value="pending">Đang chờ</option>
-            <option value="in_progress">Đang xử lý</option>
-            <option value="resolved">Đã xử lý</option>
-          </select>
-        </div>
-
-        <ul id="report-items" class="report-items">
-          <!-- Danh sách báo cáo sẽ được render ở đây -->
-        </ul>
-      </aside>
-
+     
       <main class="chat-window">
         <div id="chat-header" class="chat-header">
           <span id="conversation-name">Cuộc trò chuyện</span>
@@ -230,13 +102,13 @@
       </button>
     </footer>
 
-    <!-- Modal hiển thị ảnh -->
+    <!-- Modal hiển thị ảnh 
     <div id="image-modal" class="image-modal">
       <span class="close-btn" onclick="closeImageModal()">&times;</span>
       <img class="modal-content" id="modal-image" />
     </div>
 
-    <!-- Modal hiển thị thông tin người dùng -->
+    <!-- Modal hiển thị thông tin người dùng 
     <div id="user-info-modal" class="user-modal">
       <div class="user-modal-content">
         <span class="user-modal-close" onclick="closeUserInfoModal()">&times;</span>
@@ -258,12 +130,12 @@
           </div>
         </div>
 
-        <!-- Thêm container cho danh sách bạn chung -->
+        <!-- Thêm container cho danh sách bạn chung 
         <div id="mutual-friends-container" class="mutual-friends-container">
-          <!-- Nội dung sẽ được thêm động bởi JavaScript -->
+          <!-- Nội dung sẽ được thêm động bởi JavaScript 
         </div>
 
-        <!-- Thêm các nút tương tác -->
+        <!-- Thêm các nút tương tác 
         <div class="user-actions">
           <button id="add-friend-btn" class="action-btn add-friend-btn" style="display: none">
             <i class="fas fa-user-plus"></i>
@@ -286,7 +158,7 @@
       <i class="fas fa-arrow-down"></i>
     </button>
 
-    <!-- Modal báo cáo -->
+    <!-- Modal báo cáo 
     <div id="report-modal" class="user-modal">
       <div class="user-modal-content">
         <span class="user-modal-close" onclick="closeReportModal()">&times;</span>
@@ -306,7 +178,7 @@
       </div>
     </div>
 
-    <!-- Modal tạo cuộc trò chuyện / nhóm -->
+    <!-- Modal tạo cuộc trò chuyện / nhóm 
     <div id="create-conversation-modal" class="user-modal">
       <div class="user-modal-content">
         <span class="user-modal-close" onclick="closeCreateModal()">&times;</span>
