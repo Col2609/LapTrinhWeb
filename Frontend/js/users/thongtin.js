@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function fetchUserInfo(token) {
   try {
-    const response = await fetch(`${config.baseURL}/users/`, {
+    const response = await fetch(`${config.baseURL}/users`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -82,7 +82,7 @@ function openUpdatePopup(token) {
         <label for="email-input">Email:</label>
         <input type="email" id="email-input" autocomplete="email" placeholder="Nhập email mới" />
       </div>
-      <div class="input-group">
+      <div class="input-group"> 
         <label for="avatar-modal-upload">Chọn ảnh đại diện:</label>
         <input type="file" id="avatar-modal-upload" accept=".jpg,.jpeg,.png" />
       </div>
@@ -160,15 +160,12 @@ function handleUpdate(token) {
     }
 
     const formData = new FormData();
-    if (avatarFile) formData.append('avatar_file', avatarFile);
+    if (avatarFile) formData.append('avatar', avatarFile);
+    if (nickname) formData.append('nickname', nickname);
+    if (email) formData.append('email', email);
 
-    const query = [];
-    if (nickname) query.push(`nickname=${encodeURIComponent(nickname)}`);
-    if (email) query.push(`email=${encodeURIComponent(email)}`);
-    const queryString = query.length ? `?${query.join('&')}` : '';
-
-    fetch(`${config.baseURL}/users/${queryString}`, {
-      method: 'PUT',
+    fetch(`${config.baseURL}/users`, {
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
       },

@@ -42,21 +42,45 @@ class Message extends Model
                 LIMIT :limit OFFSET :offset
             ';
 
-            error_log("SQL Query: $sql");
-            error_log("Parameters: limit=$limit, offset=$offset");
-
             $stmt = $this->db->prepare($sql);
             $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
             $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
             $stmt->execute();
 
             $results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-            error_log("Found " . count($results) . " messages");
+
+            // Lấy danh sách message_id
+            $messageIds = array_column($results, 'message_id');
+            $attachmentsMap = [];
+
+            if (!empty($messageIds)) {
+                $inQuery = implode(',', array_fill(0, count($messageIds), '?'));
+                $stmt2 = $this->db->prepare("SELECT message_id, file_url, file_type FROM attachments WHERE message_id IN ($inQuery)");
+                $stmt2->execute($messageIds);
+                $attachments = $stmt2->fetchAll(\PDO::FETCH_ASSOC);
+
+                // Gom attachments theo message_id
+                foreach ($attachments as $att) {
+                    $attachmentsMap[$att['message_id']][] = [
+                        'file_url' => $att['file_url'],
+                        'file_type' => $att['file_type']
+                    ];
+                }
+            }
+
+            // Gắn attachments vào từng message
+            foreach ($results as &$msg) {
+                $msg['attachments'] = $attachmentsMap[$msg['message_id']] ?? [];
+            }
 
             return $results;
         } catch (\PDOException $e) {
-            error_log("Database error in getMessages: " . $e->getMessage());
             throw $e;
         }
+    }
+
+    public function getDb()
+    {
+        return $this->db;
     }
 }

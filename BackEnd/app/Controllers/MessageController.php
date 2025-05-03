@@ -47,7 +47,8 @@ class MessageController extends Controller
                         'username' => $message['username'],
                         'nickname' => $message['nickname'],
                         'avatar' => $message['avatar']
-                    ]
+                    ],
+                    'attachments' => $message['attachments'] ?? []
                 ];
             }, $messages);
 
@@ -75,27 +76,77 @@ class MessageController extends Controller
             return $this->response(['message' => 'Không tìm thấy người dùng'], 404);
         }
 
-        // Chỉ kiểm tra content trong POST request
-        $data = json_decode(file_get_contents('php://input'), true);
-        if (!isset($data['content'])) {
-            return $this->response(['message' => 'Nội dung tin nhắn là bắt buộc'], 400);
+        // Lấy content nếu có
+        $content = null;
+        if (isset($_POST['content'])) {
+            $content = $_POST['content'];
+        } else {
+            $data = json_decode(file_get_contents('php://input'), true);
+            if (isset($data['content'])) {
+                $content = $data['content'];
+            }
         }
 
-        $messageId = $this->messageModel->create([
+        // Cho phép gửi file mà không cần content
+        if (empty($content) && !isset($_FILES['file'])) {
+            return $this->response(['message' => 'Phải có nội dung hoặc file đính kèm'], 400);
+        }
+
+        $messageData = [
             'sender_id' => $user['user_id'],
-            'content' => $data['content']
-        ]);
+            'content' => $content !== null ? $content : ''
+        ];
+
+        $attachments = [];
+        if (isset($_FILES['file'])) {
+            $file = $_FILES['file'];
+            $allowedTypes = ['image/jpeg', 'image/png', 'application/pdf', 'video/mp4', 'audio/mpeg'];
+            $maxSize = 10 * 1024 * 1024; // 10MB
+
+            if (!in_array($file['type'], $allowedTypes)) {
+                return $this->response(['message' => 'Loại file không được hỗ trợ'], 400);
+            }
+
+            if ($file['size'] > $maxSize) {
+                return $this->response(['message' => 'File quá lớn, tối đa 10MB'], 400);
+            }
+
+            $uploadDir = 'uploads/conversations/';
+            if (!file_exists($uploadDir)) mkdir($uploadDir, 0777, true);
+
+            $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+            $fileName = uniqid() . '.' . $extension;
+            $filePath = $uploadDir . $fileName;
+
+            if (move_uploaded_file($file['tmp_name'], $filePath)) {
+                $attachments[] = [
+                    'file_url' => $filePath,
+                    'file_type' => $file['type']
+                ];
+            }
+        }
+
+        $messageId = $this->messageModel->create($messageData);
+
+        // Lưu file vào bảng attachments nếu có file đính kèm
+        if (!empty($attachments)) {
+            foreach ($attachments as $att) {
+                $stmt = $this->messageModel->getDb()->prepare('INSERT INTO attachments (message_id, file_url, file_type) VALUES (?, ?, ?)');
+                $stmt->execute([$messageId, $att['file_url'], $att['file_type']]);
+            }
+        }
 
         $messageData = [
             'message_id' => $messageId,
-            'content' => $data['content'],
+            'content' => $content,
             'timestamp' => date('Y-m-d H:i:s'),
             'sender' => [
                 'user_id' => (int)$user['user_id'],
                 'username' => $user['username'],
                 'nickname' => $user['nickname'],
                 'avatar' => $user['avatar']
-            ]
+            ],
+            'attachments' => $attachments
         ];
 
         return $this->response([

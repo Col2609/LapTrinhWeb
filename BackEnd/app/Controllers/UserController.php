@@ -257,25 +257,6 @@ class UserController extends Controller
 
         $results = [];
         foreach ($users as $user) {
-            $status = 'Chưa kết bạn';
-
-            // Kiểm tra trạng thái bạn bè
-            $isFriend = $this->friendModel->isFriend($currentUser['username'], $user['username']);
-            if ($isFriend) {
-                $status = 'Bạn bè';
-            } else {
-                // Kiểm tra lời mời đã gửi
-                $sent = $this->friendRequestModel->isRequestSent($currentUser['username'], $user['username']);
-                if ($sent) {
-                    $status = 'Đã gửi lời mời';
-                } else {
-                    // Kiểm tra lời mời đã nhận
-                    $received = $this->friendRequestModel->isRequestReceived($currentUser['username'], $user['username']);
-                    if ($received) {
-                        $status = 'Chờ xác nhận';
-                    }
-                }
-            }
 
             $results[] = [
                 'user_id' => $user['user_id'],
@@ -285,7 +266,6 @@ class UserController extends Controller
                 'avatar' => $user['avatar'],
                 'created_at_UTC' => $user['created_at_UTC'],
                 'last_active_UTC' => $user['last_active_UTC'],
-                'status' => $status,
             ];
         }
 

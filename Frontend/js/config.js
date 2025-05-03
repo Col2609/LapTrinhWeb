@@ -1,8 +1,6 @@
-const BASE = 'http://localhost:8000';
-
 const config = {
-  baseURL: BASE,
-  wsUrl: BASE,
+  baseURL: 'http://localhost:8000',
+  wsUrl: 'ws://localhost:8080',
 };
 
 export default config;

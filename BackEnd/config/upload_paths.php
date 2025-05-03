@@ -1,15 +1,14 @@
 <?php
 
 define('UPLOAD_DIR', 'uploads');
-define('AVATARS_USER_DIR', UPLOAD_DIR . '/avatars/users');
-define('AVATARS_GROUP_DIR', UPLOAD_DIR . '/avatars/groups');
+define('AVATARS_USER_DIR', UPLOAD_DIR . '/avatars');
 define('CONVERSATION_ATTACHMENTS_DIR', UPLOAD_DIR . '/conversations');
 
 // Tạo các thư mục nếu chưa tồn tại
-function createUploadDirectories() {
+function createUploadDirectories()
+{
     $directories = [
         AVATARS_USER_DIR,
-        AVATARS_GROUP_DIR,
         CONVERSATION_ATTACHMENTS_DIR
     ];
 
@@ -20,4 +19,4 @@ function createUploadDirectories() {
             }
         }
     }
-} 
+}

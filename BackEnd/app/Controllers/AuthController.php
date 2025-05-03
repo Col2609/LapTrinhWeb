@@ -142,7 +142,17 @@ class AuthController extends Controller
 
     public function refreshToken()
     {
-        $data = json_decode(file_get_contents('php://input'), true);
+        // Kiểm tra Content-Type
+        $contentType = isset($_SERVER["CONTENT_TYPE"]) ? trim($_SERVER["CONTENT_TYPE"]) : '';
+
+        // Lấy dữ liệu từ request
+        if (strpos($contentType, "application/json") !== false) {
+            // Nếu là JSON
+            $data = json_decode(file_get_contents('php://input'), true);
+        } else {
+            // Nếu là form data
+            $data = $_POST;
+        }
 
         if (!isset($data['refresh_token'])) {
             return $this->response(['message' => 'Thiếu refresh token'], 400);

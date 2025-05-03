@@ -1,7 +1,6 @@
 import { toast, createModal, formatDateToMessage } from '../untils.js';
 import config from '../config.js';
 import initContextMenu from '../context-menu.js';
-import toggleReportsList from './report.js';
 // Các biến toàn cục
 let selectedFiles = [];
 let currentConversationId = null;
@@ -1288,7 +1287,7 @@ async function submitCreateConversation() {
     if (!response.ok) {
       toast({
         title: 'Lỗi',
-        message: result.message|| 'Có lỗi xảy ra.',
+        message: result.message || 'Có lỗi xảy ra.',
         type: 'error',
       });
       return;
@@ -1747,7 +1746,7 @@ async function deleteFriendRequest(requestId) {
           await loadFriendRequests(); // Refresh lại danh sách
         } else {
           const data = await res.json();
-          toast({ title: 'Lỗi', message: data.message|| 'Không thể hủy yêu cầu.', type: 'error' });
+          toast({ title: 'Lỗi', message: data.message || 'Không thể hủy yêu cầu.', type: 'error' });
         }
       } catch (err) {
         console.error('Lỗi khi hủy yêu cầu:', err);
@@ -1867,7 +1866,7 @@ async function respondFriendRequest(requestId, accept = true) {
 
     if (!res.ok) {
       const err = await res.json();
-      toast({ title: 'Lỗi', message: err.message|| 'Thao tác không thành công.', type: 'error' });
+      toast({ title: 'Lỗi', message: err.message || 'Thao tác không thành công.', type: 'error' });
       return;
     }
 
@@ -2317,7 +2316,7 @@ async function makeAdmin(conversationId, username) {
           const result = await response.json();
           toast({
             title: 'Lỗi',
-            message: result.message|| 'Không thể chỉ định admin',
+            message: result.message || 'Không thể chỉ định admin',
             type: 'error',
           });
           return;
@@ -2411,7 +2410,7 @@ async function removeMember(conversationId, username) {
           const result = await response.json();
           toast({
             title: 'Lỗi',
-            message: result.message|| 'Không thể xóa thành viên khỏi nhóm',
+            message: result.message || 'Không thể xóa thành viên khỏi nhóm',
             type: 'error',
           });
           return;

@@ -52,16 +52,21 @@ function checkTokenExpiration() {
       message: 'Bạn có muốn gia hạn phiên làm việc không?',
       primaryButtonText: 'Kéo dài phiên làm việc',
       onPrimary: () => {
-        fetch(`${config.baseURL}/auth/refresh-token?refresh_token=${encodeURIComponent(refreshToken)}`, {
+        const formData = new FormData();
+        formData.append('refresh_token', refreshToken);
+
+        fetch(`${config.baseURL}/auth/refresh-token`, {
           method: 'POST',
+          body: formData,
         })
           .then(async (res) => {
             if (!res.ok) {
               const errorData = await res.json();
-              throw new Error(errorData.detail || 'Lỗi không xác định');
+              throw new Error(errorData.message || 'Lỗi không xác định');
             }
 
             const result = await res.json();
+            console.log(result);
             if (result.access_token) {
               toast({
                 title: 'Thành công',
