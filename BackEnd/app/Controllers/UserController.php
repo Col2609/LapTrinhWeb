@@ -4,18 +4,12 @@ namespace Controllers;
 
 use Core\Controller;
 use Models\User;
-use Models\Report;
-use Models\Friend;
-use Models\FriendRequest;
 
 use Core\JwtHelper;
 
 class UserController extends Controller
 {
     private $userModel;
-    private $reportModel;
-    private $friendModel;
-    private $friendRequestModel;
     public function __construct()
     {
         $this->userModel = new User();
