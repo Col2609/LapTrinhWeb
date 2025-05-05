@@ -32,11 +32,6 @@ switch ($request) {
         echo json_encode(['message' => 'Welcome to My API']);
         break;
 
-    case '/auth':
-        $controller = new Controllers\AuthController();
-        $controller->index(); // GET list users
-        break;
-
     case '/auth/register':
         $controller = new Controllers\AuthController();
         $controller->register(); // POST create user
@@ -115,6 +110,38 @@ switch ($request) {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $controller = new Controllers\UserController();
             $controller->changePassword(); // POST đổi mật khẩu
+        } else {
+            http_response_code(405);
+            echo json_encode(["message" => "Method Not Allowed"]);
+        }
+        break;
+
+    case '/admin/users':
+        if ($_SERVER['REQUEST_METHOD'] == 'GET') {
+            $controller = new Controllers\AdminController();
+            $controller->getAllUsers(); // GET danh sách tất cả người dùng
+        } else {
+            http_response_code(405);
+            echo json_encode(["message" => "Method Not Allowed"]);
+        }
+        break;
+
+    case (preg_match('/^\/admin\/set-admin\/(\d+)$/', $request) ? true : false):
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $user_id = explode('/', $request)[3];  // Lấy user_id từ URL
+            $controller = new Controllers\AdminController();
+            $controller->setAdmin($user_id); // POST cấp quyền admin qua URL
+        } else {
+            http_response_code(405);
+            echo json_encode(["message" => "Method Not Allowed"]);
+        }
+        break;
+
+    case (preg_match('/^\/admin\/delete-user\/(\d+)$/', $request) ? true : false):
+        if ($_SERVER['REQUEST_METHOD'] == 'DELETE') {
+            $user_id = explode('/', $request)[3];  // Lấy user_id từ URL
+            $controller = new Controllers\AdminController();
+            $controller->deleteUser($user_id); // DELETE xóa tài khoản qua URL
         } else {
             http_response_code(405);
             echo json_encode(["message" => "Method Not Allowed"]);

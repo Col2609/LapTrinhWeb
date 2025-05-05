@@ -73,7 +73,7 @@ class User extends Model
 
     public function update($userId, $data)
     {
-        $allowedFields = ['nickname', 'email', 'avatar'];
+        $allowedFields = ['nickname', 'email', 'avatar', 'is_admin'];
         $updates = [];
         $values = [];
 

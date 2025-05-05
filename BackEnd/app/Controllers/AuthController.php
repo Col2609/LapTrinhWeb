@@ -11,13 +11,6 @@ use Helpers\PasswordHelper;
 
 class AuthController extends Controller
 {
-    public function index()
-    {
-        $user = new User();
-        $users = $user->getAll();
-        $this->response(['message' => 'Thành công', 'users' => $users]);
-    }
-
     public function register()
     {
         $data = json_decode(file_get_contents('php://input'), true);
