@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mini Chat</title>
+    <link rel="stylesheet" href="../../css/users/chat.css" />
+    <link rel="stylesheet" href="../../css/modal-overlay.css" />
+    <link rel="stylesheet" href="../../css/toast.css" />
+    <link rel="stylesheet" href="../../css/context-menu.css" />
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+
+    <script type="module" src="../../js/auth/auth-check.js"></script>
+    <script type="module" src="../../js/users/chat.js"></script>
+    <script type="module" src="../../js/context-menu.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <div id="toast"></div>
+
+      <main class="chat-window">
+        <div id="chat-header" class="admin-header">
+          <span id="conversation-name">Chat App</span>
+          <button class="info-button" onclick="toggleConversationInfo()" title="Thông tin cuộc trò chuyện"></button>
+        </div>
+
+          <div class="user-container">
+            <h2>Danh sách người dùng</h2>
+            <table id="user-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Username</th>
+                  <th>Nickname</th>
+                  <th>Email</th>
+                  <th>Loại tài khoản</th>
+                  <th>Thời gian đăng nhập gần đây</th>
+                  <th>Thời gian tạo tài khoản </th>
+                </tr>
+              </thead>
+              <tbody>
+              </tbody>
+            </table>
+          </div>
+        
+
+
+      </main>
+    </div>
+
+    <footer>
+      <div class="footer-icons">
+        <button onclick="window.location.href='thongtin.html'" title="Thông tin cá nhân">
+          <i class="fas fa-user"></i>
+        </button>
+        <button class="message-icon" title="Home">
+          <i class="fa-solid fa-house"></i>
+        </button>
+      </div>
+
+      <button class="logout-button" onclick="logout()" title="Đăng xuất">
+        <i class="fas fa-sign-out-alt"></i>
+      </button>
+    </footer>
+
+    <!-- Modal hiển thị ảnh  -->
+    <div id="image-modal" class="image-modal">
+      <span class="close-btn" onclick="closeImageModal()">&times;</span>
+      <img class="modal-content" id="modal-image" />
+    </div>
+
+    <!-- Modal hiển thị thông tin người dùng  -->
+    <div id="user-info-modal" class="user-modal">
+      <div class="user-modal-content">
+        <span class="user-modal-close" onclick="closeUserInfoModal()">&times;</span>
+        <div class="user-info-container">
+          <img id="user-avatar" class="user-avatar" src="../../assets/image/private-chat-default.jpg" alt="Avatar" />
+          <div class="user-details">
+            <div class="user-info-item">
+              <i class="fas fa-at"></i>
+              <span id="user-username"></span>
+            </div>
+            <div class="user-info-item">
+              <i class="fas fa-user"></i>
+              <span id="user-nickname"></span>
+            </div>
+            <div class="user-info-item">
+              <i class="fas fa-envelope"></i>
+              <span id="user-email"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

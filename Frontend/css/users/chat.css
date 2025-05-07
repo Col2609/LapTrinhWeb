@@ -397,7 +397,7 @@ button:hover {
 }
 
 /* Header chat */
-.chat-header {
+.chat-header, .admin-header{
   font-size: 20px;
   font-weight: bold;
   text-align: center;
