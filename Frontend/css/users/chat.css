@@ -15,7 +15,7 @@ body {
 }
 
 /* Container */
-.container {
+.container{
   display: flex;
   width: 100%;
   max-width: none;
@@ -26,6 +26,15 @@ body {
   margin: 20px auto;
 }
 
+.admin-container {
+  width: 100%;
+  max-width: none;
+  flex-grow: 1;
+  background: #fff9e6;
+  border-radius: 20px;
+  overflow: hidden;
+  margin: 20px auto;
+}
 /* SIDEBAR */
 .conversation-list {
   width: 45%;
@@ -668,7 +677,7 @@ footer {
 @media (max-width: 768px) {
   .container {
     display: flex;
-    width: 100%;
+    width: 200%;
     max-width: none;
     flex-grow: 1;
     background: #fff9e6;
@@ -1540,6 +1549,7 @@ footer {
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   box-sizing: border-box;
+  overflow: auto;
 }
 
 .user-container h2 {
@@ -1575,7 +1585,7 @@ footer {
 #user-table th:nth-child(1) { width: 60px; }
 #user-table th:nth-child(2) { width: 120px; }
 #user-table th:nth-child(3) { width: 120px; }
-#user-table th:nth-child(4) { width: 180px; }
+#user-table th:nth-child(4) { width: 200px; }
 #user-table th:nth-child(5) { width: 130px; }
 #user-table th:nth-child(6) { width: 230px; }
 #user-table th:nth-child(7) { width: 180px; }
@@ -1596,14 +1606,14 @@ footer {
 
 @media screen and (max-width: 768px) {
   #user-table {
-    font-size: 12px;
+    font-size: 11px;
   }
 
-  #user-table th,
-  #user-table td {
-    padding: 8px;
+  #user-table th, #user-table td {
+    padding: 6px 4px;
   }
 }
+
 
 /* Bo góc cho bảng */
 table {
@@ -1621,10 +1631,148 @@ table tr:first-child th:last-child {
   border-top-right-radius: 10px;
 }
 
-table tr:last-child th:first-child {
-  border-bottom-left-radius: 10px;
+
+
+.container {
+  max-width: 1200px;
+  margin: auto;
 }
 
-table tr:last-child th:last-child {
-  border-bottom-right-radius: 10px;
+
+#user-table td:nth-child(8),
+#user-table th:nth-child(8) {
+  border-left: 1px solid #ddd;
+  border-right: 1px solid #ddd;
+  border-top: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
+  text-align: center;
+}
+
+
+
+
+/* BO GÓC TABLE + XÓA VIỀN VUÔNG PHÍA TRÊN */
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+thead tr:first-child th:first-child {
+  border-top-left-radius: 8px;
+}
+
+thead tr:first-child th:last-child {
+  border-top-right-radius: 8px;
+}
+
+thead {
+  border-top: none;
+}
+
+
+/* Xóa viền trên và bo góc đầu bảng */
+#user-table thead {
+  border-top: none;
+}
+
+/* Bo góc trái/phải trên cùng */
+#user-table thead tr:first-child th:first-child {
+  border-top-left-radius: 10px !important;
+  overflow: hidden;
+}
+
+#user-table thead tr:first-child th:last-child {
+  border-top-right-radius: 10px !important;
+  overflow: hidden;
+}
+
+.btn-admin {
+  background-color: #28a745 !important; /* xanh lá cây */
+  color: white !important;
+  border: none;
+  padding: 6px 12px;
+  margin-right: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btn-admin:hover {
+  background-color: #218838; /* màu xanh đậm hơn khi hover */
+}
+
+.btn-delete {
+  background-color: #dc3545 !important; /* đỏ */
+  color: white !important;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btn-delete:hover {
+  background-color: #c82333; /* đỏ đậm hơn khi hover */
+}
+
+
+@media screen and (max-width: 1400px) {
+  #user-table {
+    font-size: 13px;
+    width: 100%;
+    table-layout: auto;
+    overflow-x: auto;
+    display: block;
+  }
+
+  #user-table thead,
+  #user-table tbody {
+    display: table;
+    width: 100%;
+  }
+}
+/* Responsive bảng cho màn hình chia đôi */
+.user-container {
+  width: 100%;
+  overflow-x: auto; /* Cho phép cuộn ngang nếu quá hẹp */
+}
+
+#user-table {
+  width: 100%;
+  table-layout: auto;
+  font-size: 13px;
+  border-collapse: collapse;
+  overflow-x: auto;
+}
+
+/* Đảm bảo bảng vẫn là dạng table, không chuyển sang dạng dọc */
+@media screen and (max-width: 1400px) {
+  #user-table {
+    font-size: 12px;
+  }
+
+  #user-table th,
+  #user-table td {
+    padding: 8px 6px;
+    white-space: nowrap; /* Không cho xuống dòng */
+  }
+}
+
+/* Ngăn bảng bị tràn khi chia đôi màn hình nhỏ */
+@media screen and (max-width: 1024px) {
+  .container {
+    padding: 10px;
+    overflow-x: auto;
+  }
+
+  #user-table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  .user-container {
+    padding: 10px;
+  }
 }
