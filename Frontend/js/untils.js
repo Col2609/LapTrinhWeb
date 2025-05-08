@@ -143,7 +143,7 @@ export const formatDate = (date) => {
   const day = date.getDate().toString().padStart(2, '0');
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
   const year = date.getFullYear(); // Lấy đầy đủ 4 chữ số của năm
-  return `${hours}:${minutes} ${ampm} <br>${day}/${month}/${year}`;
+  return `${hours}:${minutes} ${ampm} ${day}/${month}/${year}`;
 };
 
 // Định dạng thời gian theo yêu cầu: phút:giờ (12 giờ)

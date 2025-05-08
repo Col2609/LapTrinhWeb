@@ -15,7 +15,7 @@ body {
 }
 
 /* Container */
-.container{
+.container {
   display: flex;
   width: 100%;
   max-width: none;
@@ -406,7 +406,8 @@ button:hover {
 }
 
 /* Header chat */
-.chat-header, .admin-header{
+.chat-header,
+.admin-header {
   font-size: 20px;
   font-weight: bold;
   text-align: center;
@@ -1513,7 +1514,6 @@ footer {
   display: none !important;
 }
 
-
 /* Container chính */
 .container {
   max-width: 1200px; /* hoặc 100% nếu bạn muốn full chiều ngang */
@@ -1582,13 +1582,27 @@ footer {
 }
 
 /* Định nghĩa độ rộng cột */
-#user-table th:nth-child(1) { width: 60px; }
-#user-table th:nth-child(2) { width: 120px; }
-#user-table th:nth-child(3) { width: 120px; }
-#user-table th:nth-child(4) { width: 200px; }
-#user-table th:nth-child(5) { width: 130px; }
-#user-table th:nth-child(6) { width: 230px; }
-#user-table th:nth-child(7) { width: 180px; }
+#user-table th:nth-child(1) {
+  width: 60px;
+}
+#user-table th:nth-child(2) {
+  width: 120px;
+}
+#user-table th:nth-child(3) {
+  width: 120px;
+}
+#user-table th:nth-child(4) {
+  width: 200px;
+}
+#user-table th:nth-child(5) {
+  width: 130px;
+}
+#user-table th:nth-child(6) {
+  width: 230px;
+}
+#user-table th:nth-child(7) {
+  width: 180px;
+}
 
 #user-table th {
   font-weight: bold;
@@ -1609,11 +1623,11 @@ footer {
     font-size: 11px;
   }
 
-  #user-table th, #user-table td {
+  #user-table th,
+  #user-table td {
     padding: 6px 4px;
   }
 }
-
 
 /* Bo góc cho bảng */
 table {
@@ -1631,13 +1645,10 @@ table tr:first-child th:last-child {
   border-top-right-radius: 10px;
 }
 
-
-
 .container {
   max-width: 1200px;
   margin: auto;
 }
-
 
 #user-table td:nth-child(8),
 #user-table th:nth-child(8) {
@@ -1647,9 +1658,6 @@ table tr:first-child th:last-child {
   border-bottom: 1px solid #ddd;
   text-align: center;
 }
-
-
-
 
 /* BO GÓC TABLE + XÓA VIỀN VUÔNG PHÍA TRÊN */
 table {
@@ -1670,7 +1678,6 @@ thead tr:first-child th:last-child {
 thead {
   border-top: none;
 }
-
 
 /* Xóa viền trên và bo góc đầu bảng */
 #user-table thead {

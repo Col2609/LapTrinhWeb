@@ -12,8 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
 
     <script type="module" src="../../js/auth/auth-check.js"></script>
-    <script type="module" src="../../js/users/chat.js"></script>
-    <script type="module" src="../../js/context-menu.js"></script>
+    <script type="module" src="../../js/admin/admin.js"></script>
   </head>
   <body>
     <div class="admin-container">
@@ -22,81 +21,26 @@
       <main class="chat-window">
         <div id="chat-header" class="admin-header">
           <span id="conversation-name">Chat App</span>
-          <button class="info-button" onclick="toggleConversationInfo()" title="Thông tin cuộc trò chuyện"></button>
         </div>
 
-          <div class="user-container">
-            <h2>Danh sách người dùng</h2>
-            <table id="user-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Username</th>
-                  <th>Nickname</th>
-                  <th>Email</th>
-                  <th>Loại tài khoản</th>
-                  <th>Thời gian đăng nhập gần đây</th>
-                  <th>Thời gian tạo tài khoản </th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>1</td>
-                  <td>nguyenvana</td>
-                  <td>Văn A</td>
-                  <td>vana@example.com</td>
-                  <td>Admin</td>
-                  <td>2025-05-07 20:34:56 (UTC+7)</td>
-                  <td>2023-01-15 08:12:45</td>
-                  <td>
-                    <button class="btn-admin">Chỉ định admin</button>
-                     <button class="btn-delete">Xóa tài khoản</button>
-                  </td>
-                </tr>
-                <tr>
-                  <td>2</td>
-                  <td>tranthib</td>
-                  <td>Bảo Trân</td>
-                  <td>tranbao.tran@example.com</td>
-                  <td>User</td>
-                  <td>2025-05-05 14:00:00 (UTC+7)</td>
-                  <td>2022-12-10 10:10:10</td>
-                  <td>
-                    <button class="btn-admin">Chỉ định admin</button>
-                     <button class="btn-delete">Xóa tài khoản</button>
-                  </td>
-                </tr>
-                <tr>
-                  <td>3</td>
-                  <td>longnt01</td>
-                  <td>Long Nguyễn</td>
-                  <td>longnt.1990.vietnam@example.com</td>
-                  <td>Moderator</td>
-                  <td>2025-04-25 23:59:59 (UTC+7)</td>
-                  <td>2021-05-01 05:00:00</td>
-                  <td>
-                    <button class="btn-admin">Chỉ định admin</button>
-                     <button class="btn-delete">Xóa tài khoản</button>
-                  </td>
-                </tr>
-                <tr>
-                  <td>4</td>
-                  <td>thutrang98</td>
-                  <td>Thu Trang</td>
-                  <td>trang98@emailprovider.com</td>
-                  <td>User</td>
-                  <td>2025-03-11 11:11:11 (UTC+7)</td>
-                  <td>2022-02-22 02:22:22</td>
-                  <td>
-                    <button class="btn-admin">Chỉ định admin</button>
-                     <button class="btn-delete">Xóa tài khoản</button>
-                  </td>
-                </tr>
-                
-              </tbody>
-            </table>
-          </div>
+        <div class="user-container">
+          <h2>Danh sách người dùng</h2>
+          <table id="user-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Nickname</th>
+                <th>Email</th>
+                <th>Loại tài khoản</th>
+                <th>Thời gian đăng nhập gần đây</th>
+                <th>Thời gian tạo tài khoản</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </main>
     </div>
 
@@ -114,35 +58,5 @@
         <i class="fas fa-sign-out-alt"></i>
       </button>
     </footer>
-
-    <!-- Modal hiển thị ảnh  -->
-    <div id="image-modal" class="image-modal">
-      <span class="close-btn" onclick="closeImageModal()">&times;</span>
-      <img class="modal-content" id="modal-image" />
-    </div>
-
-    <!-- Modal hiển thị thông tin người dùng  -->
-    <div id="user-info-modal" class="user-modal">
-      <div class="user-modal-content">
-        <span class="user-modal-close" onclick="closeUserInfoModal()">&times;</span>
-        <div class="user-info-container">
-          <img id="user-avatar" class="user-avatar" src="../../assets/image/private-chat-default.jpg" alt="Avatar" />
-          <div class="user-details">
-            <div class="user-info-item">
-              <i class="fas fa-at"></i>
-              <span id="user-username"></span>
-            </div>
-            <div class="user-info-item">
-              <i class="fas fa-user"></i>
-              <span id="user-nickname"></span>
-            </div>
-            <div class="user-info-item">
-              <i class="fas fa-envelope"></i>
-              <span id="user-email"></span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   </body>
 </html>
